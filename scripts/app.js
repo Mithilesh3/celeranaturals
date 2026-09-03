@@ -470,7 +470,7 @@ function productCard(item) {
   <article class="product-card card reveal" data-product-slug="${item.slug}">
     <div class="product-media">
       <a href="product.html?slug=${item.slug}" aria-label="Open ${item.name}">
-        <img src="${item.image}" alt="${item.name}" loading="lazy"/>
+        <img src="${item.image}" alt="${item.name}" loading="eager" decoding="async"/>
       </a>
       <div class="product-top">
         <span>${item.badge ? `<span class="tag ${item.badge.toLowerCase().includes("sale") ? "sale" : "new"}">${item.badge}</span>` : ""}</span>
@@ -483,7 +483,7 @@ function productCard(item) {
       <div class="rating">${stars(item.rating)} (${item.reviewCount})</div>
       <div class="price-row"><span class="price">${formatPrice(item.price)}</span>${item.originalPrice ? `<span class="old-price">${formatPrice(item.originalPrice)}</span>` : ""}</div>
       <div class="product-actions">
-        <button class="btn btn-primary" data-add-cart="${item.id}">Add</button>
+        <button class="btn btn-primary" data-add-cart="${item.id}">Add to Cart</button>
         <button class="btn btn-ghost" data-quick-view="${item.id}">Quick View</button>
         <a class="btn btn-ghost" href="product.html?slug=${item.slug}">Details</a>
       </div>
