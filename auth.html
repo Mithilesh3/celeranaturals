@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Login or create your Celeranaturals account." />
+    <title>Account | Celeranaturals</title>
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body data-page="auth">
+    <div id="site-header"></div>
+    <main>
+      <section class="page-hero auth-hero">
+        <div class="container">
+          <nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Home</a><span>/</span><span>Account</span></nav>
+          <h1 class="section-title page-title-small">Account Access</h1>
+        </div>
+      </section>
+      <div class="auth-wrap">
+        <div class="auth-head">
+          <h2 class="section-title auth-title">Welcome Back</h2>
+          <p class="section-sub auth-sub">Access your orders, wishlist and personalized wellness picks.</p>
+          <div class="auth-tabs">
+            <button class="active" data-auth-tab="login">Login</button>
+            <button data-auth-tab="register">Register</button>
+            <button data-auth-tab="forgot">Forgot Password</button>
+          </div>
+        </div>
+
+        <form class="auth-form active" data-auth-form="login" novalidate>
+          <label for="login-email">Email</label>
+          <input id="login-email" type="email" required />
+          <label for="login-pass">Password</label>
+          <div class="pass-row">
+            <input id="login-pass" type="password" required style="flex:1;" />
+            <button class="btn btn-ghost" type="button" data-pass-toggle="login-pass">Show</button>
+          </div>
+          <button class="btn btn-primary" type="submit">Login</button>
+        </form>
+
+        <form class="auth-form" data-auth-form="register" novalidate>
+          <label for="reg-name">Full Name</label>
+          <input id="reg-name" type="text" required />
+          <label for="reg-email">Email</label>
+          <input id="reg-email" type="email" required />
+          <label for="reg-pass">Create Password</label>
+          <div class="pass-row">
+            <input id="reg-pass" type="password" required style="flex:1;" />
+            <button class="btn btn-ghost" type="button" data-pass-toggle="reg-pass">Show</button>
+          </div>
+          <button class="btn btn-primary" type="submit">Create Account</button>
+        </form>
+
+        <form class="auth-form" data-auth-form="forgot" novalidate>
+          <label for="forgot-email">Registered Email</label>
+          <input id="forgot-email" type="email" required />
+          <button class="btn btn-primary" type="submit">Send Reset Link</button>
+        </form>
+      </div>
+    </main>
+    <div id="site-footer"></div>
+    <script type="module" src="scripts/app.js"></script>
+  </body>
+</html>

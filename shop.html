@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Browse Celeranaturals wellness products with premium filters and search." />
+    <title>Shop | Celeranaturals</title>
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body data-page="shop">
+    <div id="site-header"></div>
+    <main>
+      <section class="shop-service-wrap">
+        <div class="container shop-service-strip">
+          <a class="shop-service-item" href="contact.html">
+            <h3>Fast &amp; Reliable Shipping</h3>
+            <p>Orders are processed in 1–2 business days with proper confirmation.</p>
+          </a>
+          <a class="shop-service-item" href="cart.html">
+            <h3>Secure Checkout</h3>
+            <p>Shopping charges and payment details are safe &amp; protected.</p>
+          </a>
+          <a class="shop-service-item" href="contact.html">
+            <h3>Customer Support</h3>
+            <p>Quick and smart support services are available for order-related help.</p>
+          </a>
+          <a class="shop-service-item" href="about.html">
+            <h3>Quality You Can Trust</h3>
+            <p>Carefully hand-picked range from Celera Healthcare for daily wellness support.</p>
+          </a>
+        </div>
+      </section>
+
+      <section class="shop-main-section" id="shop-main">
+        <div class="container shop-shell">
+          <aside class="filter-box" id="shop-filter-panel">
+            <div class="filter-head-row">
+              <h3>Filters</h3>
+              <div class="filter-head-actions">
+                <button class="btn btn-ghost filter-reset" type="button" data-reset-filters>Reset</button>
+                <button class="btn btn-ghost filter-close" type="button" data-close-shop-filters>Close</button>
+              </div>
+            </div>
+            <div class="filter-group">
+              <h4>Categories</h4>
+              <div id="category-filters"></div>
+            </div>
+            <div class="filter-group">
+              <h4>Availability</h4>
+              <label class="filter-option"><input type="radio" name="availability" value="all" checked /> All</label>
+              <label class="filter-option"><input type="radio" name="availability" value="in-stock" /> In Stock</label>
+            </div>
+            <div class="filter-group">
+              <h4>Price</h4>
+              <input type="range" id="price-range" min="300" max="2000" value="2000" />
+              <div class="price-readout">Up to <strong id="price-value">INR 2,000</strong></div>
+            </div>
+            <button class="btn btn-primary filter-apply" type="button" data-apply-filters>Apply Filters</button>
+          </aside>
+          <div class="filter-scrim" data-close-shop-filters></div>
+
+          <div class="shop-main-content">
+            <div class="shop-top-meta">
+              <div>
+                <nav class="shop-breadcrumb" aria-label="Breadcrumb"><a href="index.html">Home</a><span>&gt;</span><span>Shop</span></nav>
+                <h1 class="shop-main-title">Shop</h1>
+                <p class="shop-results-line" id="shop-results-line">Showing 1–12 of 24 results</p>
+                <span id="shop-count" class="shop-count-hidden">0 products</span>
+              </div>
+              <div class="shop-top-controls">
+                <div class="mobile-shop-actions">
+                  <button class="btn btn-ghost" type="button" data-open-shop-filters>Filters</button>
+                </div>
+                <div class="shop-search-line">
+                  <input id="shop-search" placeholder="Search products..." aria-label="Search products" />
+                </div>
+                <label class="shop-sort-wrap" for="sort-select">Sort by:
+                  <select id="sort-select" aria-label="Sort products">
+                    <option value="featured">Popularity</option>
+                  <option value="price-asc">Price: Low to High</option>
+                  <option value="price-desc">Price: High to Low</option>
+                  <option value="rating">Top Rated</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            <div class="product-grid shop-product-grid" id="shop-grid"></div>
+            <div class="pagination-row">
+              <button id="load-more" class="btn btn-secondary" hidden>Load More</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <div id="site-footer"></div>
+    <script type="module" src="scripts/app.js"></script>
+  </body>
+</html>
