@@ -483,9 +483,7 @@ function productCard(item) {
       <div class="rating">${stars(item.rating)} (${item.reviewCount})</div>
       <div class="price-row"><span class="price">${formatPrice(item.price)}</span>${item.originalPrice ? `<span class="old-price">${formatPrice(item.originalPrice)}</span>` : ""}</div>
       <div class="product-actions">
-        <button class="btn btn-primary" data-add-cart="${item.id}">Add to Cart</button>
-        <button class="btn btn-ghost" data-quick-view="${item.id}">Quick View</button>
-        <a class="btn btn-ghost" href="product.html?slug=${item.slug}">Details</a>
+        <button class="btn btn-primary" data-buy-card="${item.id}">Buy Now →</button>
       </div>
     </div>
   </article>
@@ -493,6 +491,14 @@ function productCard(item) {
 }
 
 function bindProductActions(scope = document) {
+  scope.querySelectorAll("[data-buy-card]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.buyCard;
+      addToCart(id, 1, { openDrawer: false });
+      window.location.href = "cart.html";
+    });
+  });
+
   scope.querySelectorAll("[data-add-cart]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.addCart;
@@ -507,47 +513,6 @@ function bindProductActions(scope = document) {
       btn.textContent = appState.wishlist.includes(id) ? "♥" : "♡";
     });
   });
-
-  scope.querySelectorAll("[data-quick-view]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.quickView;
-      const item = productById(id);
-      if (!item) return;
-      openQuickView(item);
-    });
-  });
-}
-
-function openQuickView(item) {
-  const modal = document.querySelector("[data-quick-modal]");
-  const content = document.querySelector("[data-quick-content]");
-  if (!modal || !content) return;
-
-  content.innerHTML = `
-    <div class="product-detail">
-      <div>
-        <img src="${item.image}" alt="${item.name}" style="border-radius:14px;aspect-ratio:1/1;object-fit:cover;"/>
-      </div>
-      <div>
-        <p class="pill">Quick View</p>
-        <h2 class="section-title" style="font-size:2rem;">${item.name}</h2>
-        <p class="rating">${stars(item.rating)} (${item.reviewCount} reviews)</p>
-        <div class="price-row" style="margin:0.5rem 0;">
-          <span class="price" style="font-size:1.2rem;">${formatPrice(item.price)}</span>
-          ${item.originalPrice ? `<span class="old-price">${formatPrice(item.originalPrice)}</span>` : ""}
-        </div>
-        <p>${item.shortDescription}</p>
-        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
-          <button class="btn btn-primary" data-add-cart="${item.id}">Add to Cart</button>
-          <a class="btn btn-secondary" href="product.html?slug=${item.slug}">Open Product Page</a>
-          <button class="btn btn-ghost" data-close-quick>Close</button>
-        </div>
-      </div>
-    </div>
-  `;
-  showPanel("[data-quick-modal]");
-  content.querySelector("[data-close-quick]")?.addEventListener("click", () => hidePanel("[data-quick-modal]"));
-  bindProductActions(content);
 }
 
 function toggleWish(id) {
@@ -562,7 +527,7 @@ function toggleWish(id) {
   saveAndRefresh();
 }
 
-function addToCart(id, qty) {
+function addToCart(id, qty, options = {}) {
   if (!id) return;
   const exists = appState.cart.find((item) => item.id === id);
   if (exists) {
@@ -572,7 +537,9 @@ function addToCart(id, qty) {
   }
   saveAndRefresh();
   toast("Added to cart");
-  openCartDrawer();
+  if (options.openDrawer !== false) {
+    openCartDrawer();
+  }
 }
 
 function setCartQty(id, qty) {
@@ -789,7 +756,6 @@ function initShopPage() {
 
   const qs = new URLSearchParams(window.location.search);
   const state = {
-    q: "",
     category: qs.get("category") || "all",
     availability: "all",
     sort: "featured",
@@ -816,8 +782,6 @@ function initShopPage() {
     });
     const range = document.querySelector("#price-range");
     if (range) range.value = String(state.maxPrice);
-    const search = document.querySelector("#shop-search");
-    if (search) search.value = state.q;
     const sort = document.querySelector("#sort-select");
     if (sort) sort.value = state.sort;
     document.querySelector("#price-value").textContent = formatPrice(state.maxPrice);
@@ -840,10 +804,6 @@ function initShopPage() {
   function filtered() {
     let list = [...products];
 
-    if (state.q.trim()) {
-      const term = state.q.toLowerCase();
-      list = list.filter((item) => item.name.toLowerCase().includes(term));
-    }
     if (state.category !== "all") {
       list = list.filter((item) => item.category === state.category);
     }
@@ -882,11 +842,6 @@ function initShopPage() {
     }
   }
 
-  document.querySelector("#shop-search").addEventListener("input", (e) => {
-    state.q = e.target.value || "";
-    paint(true);
-  });
-
   document.querySelector("#sort-select").addEventListener("change", (e) => {
     state.sort = e.target.value;
     paint(true);
@@ -920,7 +875,6 @@ function initShopPage() {
   });
 
   document.querySelector("[data-reset-filters]")?.addEventListener("click", () => {
-    state.q = "";
     state.category = "all";
     state.availability = "all";
     state.sort = "featured";
