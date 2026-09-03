@@ -1192,17 +1192,19 @@ function initContactPage() {
   if (!form) return;
 
   document.querySelector("#contact-meta").innerHTML = `
-    <div class="contact-box">
-      <h3 class="contact-title">Contact Information</h3>
-      <p><strong>${contactInfo.company}</strong></p>
-      <p>${contactInfo.address}</p>
-      <p>Email: ${contactInfo.email}</p>
-      <p>Support: ${contactInfo.supportPhone}</p>
-      <p>Shipping support: ${contactInfo.shippingPhone}</p>
-      <p>Hours: ${contactInfo.supportHours}</p>
+    <div class="contact-info-card">
+      <span class="page-eyebrow">Contact Information</span>
+      <h2>${contactInfo.company}</h2>
+      <div class="contact-info-list">
+        <div><span>Email</span><a href="mailto:${contactInfo.email}">${contactInfo.email}</a></div>
+        <div><span>Customer Support</span><a href="tel:${contactInfo.supportPhone.replace(/\s/g, "")}">${contactInfo.supportPhone}</a></div>
+        <div><span>Shipping Support</span><a href="tel:${contactInfo.shippingPhone.replace(/\s/g, "")}">${contactInfo.shippingPhone}</a></div>
+        <div><span>Office</span><p>${contactInfo.address}</p></div>
+        <div><span>Hours</span><p>${contactInfo.supportHours}</p></div>
+      </div>
     </div>
-    <div class="contact-box support-note">
-      <h3 class="contact-title">Shipping and Delivery Support</h3>
+    <div class="contact-delivery-card">
+      <h3>Shipping and Delivery Support</h3>
       <p>Order processing: 1-2 business days after payment confirmation.</p>
       <p>Typical delivery: 3-5 business days in metro cities and 5-7 business days in non-metro regions.</p>
     </div>

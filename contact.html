@@ -10,33 +10,88 @@
   <body data-page="contact">
     <div id="site-header"></div>
     <main>
-      <section class="page-hero">
-        <div class="container">
+      <section class="contact-hero page-brand-hero page-brand-hero-compact">
+        <div class="container page-hero-centered reveal">
           <nav class="breadcrumb" aria-label="Breadcrumb"><a href="index.html">Home</a><span>/</span><span>Contact</span></nav>
-          <h1 class="section-title">Need product or delivery support?</h1>
-          <p class="section-sub">Reach the Celeranaturals support team for order status, shipping queries and product-related assistance.</p>
+          <span class="page-eyebrow">Celera Healthcare</span>
+          <h1>We're Here to Help.</h1>
+          <p>Have a question about our products, orders or support? Get in touch with our team.</p>
         </div>
       </section>
-      <section class="section page-tight-top">
-        <div class="container contact-layout">
-          <div>
-            <form class="contact-box" id="contact-form">
-              <h3 class="contact-title">Send Us a Message</h3>
-              <label for="name">Full Name</label>
-              <input id="name" class="input" required />
-              <label for="email" class="field-label">Email</label>
-              <input id="email" type="email" class="input" required />
-              <label for="message" class="field-label">Message</label>
-              <textarea id="message" rows="5" required></textarea>
-              <button class="btn btn-primary form-submit" type="submit">Submit</button>
-            </form>
-            <div class="map-placeholder map-gap">Lucknow, Uttar Pradesh Service Region</div>
+
+      <section class="section contact-main-section">
+        <div class="container contact-page-layout">
+          <div class="contact-info-column reveal">
+            <div id="contact-meta"></div>
+            <div class="contact-help-panel">
+              <span class="page-eyebrow">Need Help?</span>
+              <h2>Product, order and delivery support in one place.</h2>
+              <p>Use the contact details or send a message and the support team will connect with you shortly.</p>
+              <a class="btn btn-secondary" href="shop.html">Browse Products</a>
+            </div>
           </div>
-          <div id="contact-meta"></div>
+
+          <form class="contact-form-panel reveal" id="contact-form">
+            <div class="contact-form-head">
+              <span class="page-eyebrow">Contact Form</span>
+              <h2>Send Us a Message</h2>
+            </div>
+            <div class="contact-field-grid">
+              <div class="form-field">
+                <label for="name">Full Name</label>
+                <input id="name" class="input" autocomplete="name" required />
+              </div>
+              <div class="form-field">
+                <label for="email">Email Address</label>
+                <input id="email" type="email" class="input" autocomplete="email" required />
+              </div>
+              <div class="form-field">
+                <label for="phone">Phone Number</label>
+                <input id="phone" type="tel" class="input" autocomplete="tel" />
+              </div>
+              <div class="form-field">
+                <label for="subject">Subject</label>
+                <input id="subject" class="input" />
+              </div>
+              <div class="form-field form-field-full">
+                <label for="message">Message</label>
+                <textarea id="message" rows="6" required></textarea>
+              </div>
+            </div>
+            <button class="btn btn-primary form-submit" type="submit">Send Message →</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="contact-support-section">
+        <div class="container contact-support-row">
+          <article class="contact-support-item reveal">
+            <span aria-hidden="true">◇</span>
+            <div><h3>Product Support</h3><p>Questions about product categories and information.</p></div>
+          </article>
+          <article class="contact-support-item reveal">
+            <span aria-hidden="true">▣</span>
+            <div><h3>Order Support</h3><p>Help with order status, shipping and delivery queries.</p></div>
+          </article>
+          <article class="contact-support-item reveal">
+            <span aria-hidden="true">◎</span>
+            <div><h3>General Enquiries</h3><p>Contact access for everyday customer assistance.</p></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section contact-location-section">
+        <div class="container contact-location-panel reveal">
+          <div>
+            <span class="page-eyebrow">Support Access</span>
+            <h2>Need product or delivery support?</h2>
+            <p>Contact details and policy links are available across the website for quick assistance and order clarity.</p>
+          </div>
+          <a class="btn btn-primary" href="shop.html">View Products →</a>
         </div>
       </section>
     </main>
     <div id="site-footer"></div>
-    <script type="module" src="scripts/app.js"></script>
+    <script type="module" src="scripts/app.js?v=about-contact-20260903"></script>
   </body>
 </html>
