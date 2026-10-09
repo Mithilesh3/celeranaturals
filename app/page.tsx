@@ -40,7 +40,7 @@ export default function HomePage() {
           </div>
           <a className="home-category-all-link" href="/shop">View all categories <span aria-hidden="true">→</span></a>
         </header>
-        <div className="home-category-grid">{categories.map((category) => {
+        <div className="home-category-grid" role="region" aria-label="Browse wellness categories" tabIndex={0}>{categories.map((category) => {
           const href = `/shop?category=${category.slug}`;
           return <article className="home-category-item" key={category.id}>
             <a className="home-category-image-link" href={href} aria-label={`Explore ${category.name} products`}><span className="home-category-image-frame"><Image src={categoryCutouts[category.id] ?? `/${category.image}`} alt={category.name} width={1254} height={1254} sizes="(max-width: 520px) 112px, (max-width: 1024px) 148px, 170px" loading="lazy" /></span></a>

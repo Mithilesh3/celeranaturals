@@ -24,8 +24,13 @@ export function SiteHeader() {
         <div className="container nav-wrap">
           <a href="/" className="brand" aria-label="Celeranaturals home">
             <img className="logo-badge" src="/assets/images/brand/logo.png" alt="Celeranaturals" />
-            <div className="brand-title"><strong>CELERANATURALS</strong><span>By Celera Healthcare</span></div>
+            <div className="brand-title"><strong className="brand-name">CELERANATURALS</strong><span>By Celera Healthcare</span></div>
           </a>
+          <form className="mobile-header-search" action="/shop" method="get" role="search">
+            <label className="mobile-header-search-label" htmlFor="mobile-product-search">Search products</label>
+            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.4" /><path d="m16 16 4.2 4.2" /></svg>
+            <input id="mobile-product-search" name="q" type="search" placeholder="Search products…" />
+          </form>
           <nav className="nav-links" aria-label="Primary navigation">
             <a href="/" aria-current={pathname === "/" ? "page" : undefined} className={pathname === "/" ? "active" : ""}>Home</a>
             <a href="/shop" aria-current={pathname.startsWith("/shop") || pathname.startsWith("/product") ? "page" : undefined} className={pathname.startsWith("/shop") || pathname.startsWith("/product") ? "active" : ""}>Products</a>

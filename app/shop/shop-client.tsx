@@ -8,14 +8,14 @@ const MAX_PRICE = 2000;
 const PAGE_SIZE = 6;
 const money = (amount: number) => new Intl.NumberFormat("en-IN").format(amount);
 
-export function ShopClient({ initialCategory }: { initialCategory: string }) {
+export function ShopClient({ initialCategory, initialSearch }: { initialCategory: string; initialSearch: string }) {
   const validCategory = categories.some((item) => item.slug === initialCategory) ? initialCategory : "all";
   const [category, setCategory] = useState(validCategory);
   const [availability, setAvailability] = useState("all");
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(MAX_PRICE);
   const [sort, setSort] = useState("featured");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialSearch);
   const [view, setView] = useState<"grid" | "list">("grid");
   const [page, setPage] = useState(1);
   const [filtersOpen, setFiltersOpen] = useState(false);

@@ -3207,24 +3207,36 @@ body[data-page="home"] footer .footer-title {
   }
 
   .home-trust-panel {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     border-radius: 10px;
-    padding: 0.45rem 1rem;
-  }
-
-  .home-trust-item,
-  .home-trust-item:nth-child(2) {
-    border-right: 0;
+    padding: 0.35rem 0.55rem;
   }
 
   .home-trust-item {
-    border-bottom: 1px solid #dbe6ea;
-    padding: 0.82rem 0.2rem;
+    grid-template-columns: 30px minmax(0, 1fr);
+    gap: 0.45rem;
+    padding: 0.62rem 0.4rem;
   }
 
-  .home-trust-item:last-child {
+  .home-trust-item:nth-child(odd) {
+    border-right: 1px solid #dbe6ea;
+  }
+
+  .home-trust-item:nth-child(even) {
+    border-right: 0;
+  }
+
+  .home-trust-item:nth-child(-n + 2) {
+    border-bottom: 1px solid #dbe6ea;
+  }
+
+  .home-trust-item:nth-child(n + 3) {
     border-bottom: 0;
   }
+
+  .home-trust-icon { width: 27px; height: 27px; }
+  .home-trust-item h3 { font-size: 0.82rem; line-height: 1.2; }
+  .home-trust-item p { margin-top: 0.18rem; font-size: 0.7rem; line-height: 1.35; }
 
   .home-support-banner {
     padding: 1.35rem;
