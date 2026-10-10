@@ -298,10 +298,11 @@ body:has(main.site-redesign) .mobile-menu { background: #fff; }
   body[data-page] .top-strip-inner span { padding-inline: 0.2rem; white-space: normal; text-align: center; line-height: 1.15; }
   body[data-page] .top-strip-inner span:last-child { display: none; }
   .nav-wrap, body[data-page] .site-header .nav-wrap { width: calc(100% - 24px); min-height: 66px; height: 66px; gap: 0.35rem; }
-  .brand { flex: 0 1 auto; gap: 0.42rem; }
-  body[data-page] .site-header .brand { flex: 0 1 auto; min-width: 0; }
+  .brand { flex: 0 0 152px; gap: 0.42rem; }
+  body[data-page] .site-header .brand { flex: 0 0 152px; min-width: 0; }
+  body[data-page] .site-header .brand-title { min-width: 0; }
   .brand .logo-badge { width: 38px; height: 38px; }
-  body[data-page] .site-header .brand-title .brand-name { max-width: none; overflow: visible; font-size: clamp(0.7rem, 3.2vw, 0.82rem); letter-spacing: -0.025em; text-overflow: clip; white-space: nowrap; }
+  body[data-page] .site-header .brand-title .brand-name { display: block; max-width: 100%; overflow: hidden; font-size: clamp(0.7rem, 3.2vw, 0.82rem); letter-spacing: -0.025em; text-overflow: ellipsis; white-space: nowrap; }
   .brand-title span { display: none; }
   .mobile-header-search { min-width: 62px; height: 38px; gap: 0.3rem; padding-inline: 0.55rem; }
   .mobile-header-search input { font-size: 0.75rem; }
@@ -315,12 +316,18 @@ body:has(main.site-redesign) .mobile-menu { background: #fff; }
   body[data-page] .top-strip { font-size: 0.54rem; }
   .nav-wrap, body[data-page] .site-header .nav-wrap { width: calc(100% - 16px); gap: 0.2rem; }
   .brand { gap: 0.28rem; }
+  body[data-page] .site-header .brand { flex-basis: 132px; }
   body[data-page] .site-header .brand-title .brand-name { font-size: 0.66rem; letter-spacing: -0.04em; }
   .brand .logo-badge { width: 32px; height: 32px; }
   .mobile-header-search { min-width: 48px; height: 34px; padding-inline: 0.42rem; }
   .mobile-header-search input { font-size: 0.68rem; }
   .icon-nav { gap: 0; }
   .icon-nav .icon-btn, body[data-page] .site-header .icon-nav .icon-btn { width: 28px; height: 32px; }
+}
+
+@media (max-width: 350px) {
+  body[data-page] .site-header .brand { flex-basis: 38px; gap: 0; }
+  body[data-page] .site-header .brand-title { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -406,8 +413,7 @@ body:has(main.site-redesign) .mobile-menu { background: #fff; }
 }
 
 @media (max-width: 350px) {
-  .home-category-grid { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: 78px; gap: 0.45rem; overflow-x: auto; overscroll-behavior-inline: contain; padding: 0.15rem 0 0.45rem; scroll-snap-type: x mandatory; scrollbar-width: thin; }
-  .home-category-item { scroll-snap-align: start; }
+  .home-category-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-flow: row; gap: 0.55rem; overflow: visible; padding: 0.15rem 0 0.45rem; }
   .home-category-image-frame { width: 68px; }
 }
 
@@ -970,7 +976,8 @@ main.site-redesign ~ footer.site-footer .copyright { width: min(1240px, calc(100
   .catalog-filter-scrim { position: fixed; z-index: 201; inset: 0; display: block; border: 0; background: rgba(14, 36, 24, 0.42); }
   .catalog-page .store-container { width: calc(100% - 28px); }
   .catalog-page .catalog-hero { align-items: stretch; flex-direction: column; gap: 0.9rem; }
-  .catalog-page .catalog-trust-strip { flex-basis: auto; min-height: 60px; }
+  .catalog-page .catalog-trust-strip { display: grid; flex-basis: auto; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.55rem 0.7rem; min-height: 60px; }
+  .catalog-page .catalog-trust-strip > span { white-space: normal; line-height: 1.3; }
   .catalog-page .catalog-layout { display: block; }
   .catalog-page .catalog-filters { position: fixed; z-index: 202; top: 0; right: 0; bottom: 0; display: flex; width: min(360px, 88vw); height: 100dvh; flex-direction: column; gap: 1.15rem; overflow-y: auto; border: 0; border-radius: 18px 0 0 18px; padding: 1.25rem; transform: translateX(105%); transition: transform 220ms ease, visibility 220ms; visibility: hidden; pointer-events: none; }
   .catalog-page .catalog-filters.is-open { transform: translateX(0); visibility: visible; pointer-events: auto; }
@@ -1036,6 +1043,8 @@ main.site-redesign ~ footer.site-footer .copyright { width: min(1240px, calc(100
   main.site-redesign ~ footer.site-footer .footer-grid { width: calc(100% - 32px); grid-template-columns: 1fr 1fr; gap: 1.4rem 1rem; }
   main.site-redesign ~ footer.site-footer .footer-grid > div:first-child { grid-column: 1 / -1; }
   main.site-redesign ~ footer.site-footer .copyright { width: calc(100% - 32px); }
+  main.site-redesign ~ footer.site-footer { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
+  body[data-page="home"] footer.site-footer { padding-bottom: calc(74px + env(safe-area-inset-bottom)); }
 }
 
 @media (max-width: 420px) {
@@ -1103,6 +1112,7 @@ body[data-page="home"] main .home-about-title {
 body[data-page="home"] main .home-about-grid {
   grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
   gap: clamp(1.5rem, 3vw, 2.75rem);
+  align-items: start;
 }
 
 body[data-page="home"] main .home-about-media {
@@ -1258,4 +1268,52 @@ body[data-page="home"] footer .container {
   body[data-page="home"] main .about-product-tile span {
     font-size: 0.75rem;
   }
+}
+
+/* Keep the existing About section visually connected to Featured Products. */
+body[data-page="home"] main > .home-featured-products {
+  padding-block-end: clamp(0.75rem, 1vw, 1rem);
+}
+
+body[data-page="home"] main > .home-about-wrap {
+  padding-block-start: clamp(0.75rem, 1vw, 1rem);
+}
+
+/* Leadership portraits use the verified source photos from Celera Healthcare's Team page. */
+body[data-page="home"] main > .home-leadership-wrap {
+  padding-block: clamp(1.25rem, 2vw, 2rem);
+  background: #f5f8f5;
+}
+
+.home-leadership-wrap > .container { width: min(1180px, calc(100% - 48px)); }
+.home-leadership-heading { margin-bottom: 1.15rem; text-align: center; }
+.home-leadership-heading .home-featured-eyebrow { margin-bottom: 0.25rem; }
+.home-leadership-heading .section-title { margin: 0; color: #163b2b; }
+.home-leadership-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: stretch; gap: clamp(0.9rem, 1.7vw, 1.4rem); }
+.home-leadership-card { min-width: 0; overflow: hidden; border: 1px solid #e1eae2; border-radius: 15px; background: #fff; box-shadow: 0 6px 22px rgba(23, 54, 37, 0.06); }
+.home-leadership-photo { aspect-ratio: 1.08 / 1; overflow: hidden; border-radius: 14px 14px 0 0; background: #eef2ee; }
+.home-leadership-photo img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 38%; }
+.home-leadership-info { padding: 1rem 1.1rem 1.15rem; }
+.home-leadership-info h3 { margin: 0 0 0.25rem; color: #173c30; font-size: 1.12rem; line-height: 1.3; }
+.home-leadership-role { margin: 0 0 0.65rem; color: #bd3024; font-size: 0.9rem; font-weight: 700; }
+.home-leadership-bio { margin: 0; color: #4c5d52; font-size: 0.88rem; line-height: 1.55; }
+
+@media (max-width: 760px) {
+  .home-leadership-wrap > .container { width: calc(100% - 28px); }
+  body[data-page="home"] main > .home-leadership-wrap { padding-block: 1.1rem; }
+  .home-leadership-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.8rem; }
+  .home-leadership-info { padding: 0.75rem; }
+  .home-leadership-info h3 { font-size: 1rem; }
+  .home-leadership-bio { font-size: 0.82rem; }
+}
+
+@media (max-width: 560px) {
+  .home-leadership-heading { margin-bottom: 0.8rem; text-align: left; }
+  .home-leadership-grid { grid-template-columns: 1fr; gap: 0.65rem; }
+  .home-leadership-card { display: grid; grid-template-columns: minmax(96px, 36%) minmax(0, 1fr); align-items: stretch; }
+  .home-leadership-photo { min-height: 0; align-self: center; aspect-ratio: 1.08 / 1; border-radius: 14px 0 0 14px; }
+  .home-leadership-photo img { min-height: 0; object-position: center 30%; }
+  .home-leadership-info { padding: 0.7rem 0.75rem; }
+  .home-leadership-role { margin-bottom: 0.35rem; font-size: 0.82rem; }
+  .home-leadership-bio { font-size: 0.76rem; line-height: 1.45; }
 }

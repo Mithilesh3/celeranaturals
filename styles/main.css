@@ -3127,28 +3127,36 @@ body[data-page="home"] footer .footer-title {
 
 .whatsapp-float {
   position: fixed;
-  right: 22px;
-  bottom: 22px;
-  width: 52px;
-  height: 52px;
+  right: 24px;
+  left: auto;
+  bottom: 24px;
+  float: none;
+  width: 56px;
+  height: 56px;
   border-radius: 999px;
-  background: #ffffff;
-  border: 1px solid #d7e5df;
-  box-shadow: 0 10px 22px rgba(18, 56, 43, 0.2);
+  background: #25D366;
+  border: 0;
+  box-shadow: 0 5px 16px rgba(16, 55, 34, 0.24);
   display: grid;
   place-items: center;
   text-decoration: none;
-  z-index: 9999;
+  z-index: 90;
+  transition: transform 170ms ease, box-shadow 170ms ease;
 }
 
 .whatsapp-float:hover {
   transform: translateY(-1px);
-  box-shadow: 0 12px 24px rgba(18, 56, 43, 0.33);
+  box-shadow: 0 8px 20px rgba(16, 55, 34, 0.3);
+}
+
+.whatsapp-float:focus-visible {
+  outline: 3px solid #145b3a;
+  outline-offset: 3px;
 }
 
 .whatsapp-float-icon {
-  width: 32px;
-  height: 32px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
 }
@@ -3243,15 +3251,16 @@ body[data-page="home"] footer .footer-title {
   }
 
   .whatsapp-float {
-    right: 16px;
-    bottom: 16px;
+    right: max(16px, env(safe-area-inset-right));
+    left: auto;
+    bottom: max(20px, env(safe-area-inset-bottom));
     width: 50px;
     height: 50px;
   }
 
   .whatsapp-float-icon {
-    width: 30px;
-    height: 30px;
+    width: 34px;
+    height: 34px;
   }
 }
 
@@ -5861,6 +5870,25 @@ body[data-page="auth"] .auth-form input {
     grid-template-columns: 1fr;
   }
 
+}
+
+@media (max-width: 380px) {
+  body[data-page="home"] main .home-trust-item > div { min-width: 0; }
+  body[data-page="home"] main .home-trust-item h3 { font-size: 0.76rem; overflow-wrap: anywhere; }
+  body[data-page="home"] main .home-trust-item p { overflow-wrap: anywhere; }
+}
+
+@media (max-width: 350px) {
+  body[data-page="home"] main .home-trust-item {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 0.25rem;
+    text-align: center;
+  }
+
+  body[data-page="home"] main .home-trust-item > div { min-width: 0; }
+  body[data-page="home"] main .home-trust-item h3 { font-size: 0.78rem; overflow-wrap: anywhere; }
+  body[data-page="home"] main .home-trust-item p { overflow-wrap: anywhere; }
 }
 
 /* Product card final cleanup */

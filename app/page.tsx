@@ -16,6 +16,27 @@ const featuredProducts = featuredProductIds.flatMap((id) => {
   return product ? [product] : [];
 });
 
+const leadershipTeam = [
+  {
+    name: "Neeraj Saxena",
+    role: "Founder MD & CEO",
+    image: "/assets/images/leadership/enhanced/neeraj-saxena.webp",
+    bio: "Served the Industry more than 35 Years primarily in Ethical Sales & Marketing. An inclination towards good rapport building with Key Opinion Leaders and team building. Managing the all-important business operations including new product launches and their scientific promotions.",
+  },
+  {
+    name: "Deepak Bakshi",
+    role: "Founder Director",
+    image: "/assets/images/leadership/enhanced/deepak-bakshi.webp",
+    bio: "Started the career in Pharmaceuticals and now well-established Financial Consultant. Managing the Financial Portfolios. Responsible for the future growth and exploring new avenues with financial health of Co.",
+  },
+  {
+    name: "Sandeep Tandon",
+    role: "Founder Partner",
+    image: "/assets/images/leadership/enhanced/sandeep-tandon.webp",
+    bio: "An expert in OTX Pharma business along with an experience of serving the Big OTC Co at various level including the Country Business Head. Holding the responsibilities of people development and market expansion.",
+  },
+];
+
 const categoryCutouts: Record<string, string> = {
   "psyllium-husk": "/assets/images/category-cutouts/psyllium-husk.png",
   "vitamins-minerals": "/assets/images/category-cutouts/vitamins-minerals.png",
@@ -52,6 +73,8 @@ export default function HomePage() {
       </div></section>
 
       <section className="section section-soft home-products-wrap home-featured-products"><div className="container"><div className="section-head section-head-row"><div><span className="home-featured-eyebrow">Celera Healthcare · Wellness essentials</span><h2 className="section-title">Featured Products</h2></div><a className="section-link" href="/shop">View all products →</a></div><div className="commerce-product-grid home-featured-grid">{featuredProducts.map((product) => <ProductCard key={product.id} product={product} showFeedback showDiscountBadge showBuyNow />)}</div></div></section>
+
+      <section className="section home-leadership-wrap" aria-labelledby="home-leadership-title"><div className="container"><header className="home-leadership-heading"><span className="home-featured-eyebrow">The people behind Celera</span><h2 className="section-title" id="home-leadership-title">Meet Our Leadership Team</h2></header><div className="home-leadership-grid">{leadershipTeam.map((person) => <article className="home-leadership-card" key={person.name}><div className="home-leadership-photo"><Image src={person.image} alt={person.name} width={500} height={480} sizes="(max-width: 560px) 112px, (max-width: 900px) 45vw, 360px" /></div><div className="home-leadership-info"><h3>{person.name}</h3><p className="home-leadership-role">{person.role}</p><p className="home-leadership-bio">{person.bio}</p></div></article>)}</div></div></section>
 
       <section className="section section-ivory home-about-wrap"><div className="container"><div className="story-grid home-about-grid"><div className="story-copy reveal home-about-copy"><span className="pill">About Celeranaturals</span><h2 className="section-title home-about-title">Celeranaturals is the consumer wellness brand of Celera Healthcare.</h2><p className="section-sub">We deliver category-led nutraceutical solutions across digestive care, vitamins, probiotics and protein support, with transparent product information and responsive customer support.</p><a className="btn btn-secondary" href="/about">About Celeranaturals</a></div><div className="story-media reveal home-about-media"><div className="about-stage" aria-label="Celeranaturals product categories">
         <div className="about-product-tile"><Image src="/assets/images/category-cutouts/psyllium-husk.png" alt="Psyllium Husk product" width={1254} height={1254} sizes="(max-width: 768px) 40vw, 220px" loading="lazy" /><span>Psyllium Husk</span></div>
