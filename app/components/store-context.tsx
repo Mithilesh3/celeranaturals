@@ -60,21 +60,13 @@ export function StoreProvider({ children }: Readonly<{ children: React.ReactNode
     wishlist,
     addToCart: (id, qty = 1) => {
       const amount = Number.isFinite(qty) ? Math.max(1, Math.floor(qty)) : 1;
-      const found = cart.find((row) => row.id === id);
-      const nextCart = found
-        ? cart.map((row) => row.id === id ? { ...row, qty: row.qty + amount } : row)
-        : [...cart, { id, qty: amount }];
-      setCart(nextCart);
-      // Persist synchronously so Buy Now can safely navigate immediately.
-      try { localStorage.setItem("cn_cart", JSON.stringify(nextCart)); } catch { /* The in-memory cart remains usable without storage. */ }
+      setCart((rows) => rows.some((row) => row.id === id)
+        ? rows.map((row) => row.id === id ? { ...row, qty: row.qty + amount } : row)
+        : [...rows, { id, qty: amount }]);
     },
     setQuantity: (id, qty) => setCart((rows) => qty <= 0 ? rows.filter((row) => row.id !== id) : rows.map((row) => row.id === id ? { ...row, qty } : row)),
     removeFromCart: (id) => setCart((rows) => rows.filter((row) => row.id !== id)),
-    toggleWishlist: (id) => setWishlist((rows) => {
-      const next = rows.includes(id) ? rows.filter((item) => item !== id) : [...rows, id];
-      try { localStorage.setItem("cn_wishlist", JSON.stringify(next)); } catch { /* Keep the in-memory wishlist usable when browser storage is unavailable. */ }
-      return next;
-    }),
+    toggleWishlist: (id) => setWishlist((rows) => rows.includes(id) ? rows.filter((item) => item !== id) : [...rows, id]),
     ready,
   }), [cart, wishlist, ready]);
 

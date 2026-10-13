@@ -2,16 +2,14 @@
 
 import { useEffect } from "react";
 import { usePathname } from "next/navigation";
+import { pageModeFor } from "./page-mode";
 
+// First paint is handled by the blocking inline script in the root layout.
+// This only keeps the attribute in sync across client-side navigations.
 export function RoutePageMode() {
   const pathname = usePathname();
   useEffect(() => {
-    const mode = pathname.startsWith("/about") ? "about"
-      : pathname.startsWith("/contact") ? "contact"
-      : pathname.startsWith("/account") ? "auth"
-      : pathname.startsWith("/shop") || pathname.startsWith("/product") || pathname.startsWith("/cart") || pathname.startsWith("/wishlist") ? "shop"
-      : "home";
-    document.body.dataset.page = mode;
+    document.body.dataset.page = pageModeFor(pathname);
   }, [pathname]);
   return null;
 }

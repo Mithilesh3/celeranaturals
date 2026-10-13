@@ -1,0 +1,6 @@
+# Created by pnpm when firebase was added. Neither package's build script is
+# needed for the Firebase Web SDK auth path used here, and the production build
+# was verified with both ignored. Flip to true if Firestore/gRPC is added later.
+allowBuilds:
+  '@firebase/util': false
+  protobufjs: false

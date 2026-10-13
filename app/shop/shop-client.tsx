@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Link from "next/link";
 import { categories, products } from "../../scripts/data.js";
 import { ProductCard } from "../components/product-card";
 
@@ -49,11 +50,15 @@ export function ShopClient({ initialCategory, initialSearch }: { initialCategory
   return (
     <main className="store-page site-redesign catalog-page">
       <div className="store-container">
-        <nav className="catalog-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span aria-hidden="true">›</span><span aria-current="page">Shop</span></nav>
+        <nav className="catalog-breadcrumb" aria-label="Breadcrumb"><Link href="/">Home</Link><span aria-hidden="true">›</span><span aria-current="page">Shop</span></nav>
         <header className="catalog-hero">
           <div className="catalog-title-block">
             <svg className="catalog-leaf" viewBox="0 0 32 32" aria-hidden="true"><path d="M27.7 4.3C16.3 3.6 7.3 7.9 5.5 16.1c-1.1 5 2.6 9.4 7.1 8.4 8.2-1.8 12.5-10.8 12-20.2Z" /><path d="M4.3 28.2c4.6-7.4 10.1-12.7 18.2-17.3" /></svg>
-            <div><h1>Shop Products</h1><p>Discover wellness essentials for a healthier you.</p></div>
+            <div>
+              <h1>Shop All Products</h1>
+              <p>Explore healthcare and wellness essentials.</p>
+              <p className="catalog-total-count">{products.length} products in the Celeranaturals range</p>
+            </div>
           </div>
           <div className="catalog-trust-strip" aria-label="Shopping assurances">
             <span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3 20 6v6c0 5-3.4 8-8 10-4.6-2-8-5-8-10V6l8-3Z" /><path d="m8.5 12 2.2 2.2 4.8-5" /></svg>100% Genuine Products</span>

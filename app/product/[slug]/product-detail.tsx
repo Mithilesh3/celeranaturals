@@ -1,6 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { categories, products } from "../../../scripts/data.js";
 import { ProductCard } from "../../components/product-card";
 import { useStore } from "../../components/store-context";
@@ -8,18 +11,25 @@ import { useStore } from "../../components/store-context";
 type Product = (typeof products)[number];
 const money = (amount: number) => "₹" + new Intl.NumberFormat("en-IN").format(amount);
 
+// Some catalog entries still point at remote gallery images. Those are left as
+// plain <img> because no remote host is allowlisted in next.config.ts.
+function GalleryImage({ src, alt, sizes, priority = false }: { src: string; alt: string; sizes: string; priority?: boolean }) {
+  if (src.startsWith("http")) return <img src={src} alt={alt} loading={priority ? "eager" : "lazy"} />;
+  return <Image src={`/${src}`} alt={alt} width={1200} height={1200} sizes={sizes} priority={priority} />;
+}
+
 export function ProductDetail({ product }: { product: Product }) {
   const [imageIndex, setImageIndex] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [tab, setTab] = useState("description");
   const [message, setMessage] = useState("");
   const { addToCart, wishlist, toggleWishlist } = useStore();
+  const router = useRouter();
   const category = categories.find((item) => item.slug === product.category)?.name;
   const related = products.filter((item) => item.category === product.category && item.id !== product.id).slice(0, 4);
   const images = product.images?.length ? product.images : [product.image];
   const tabs = ["description", "ingredients", "benefits", "how", "reviews"];
-  const imageUrl = (image: string) => image.startsWith("http") ? image : `/${image}`;
-  const buyNow = () => { addToCart(product.id, quantity); window.location.href = "/cart"; };
+  const buyNow = () => { addToCart(product.id, quantity); router.push("/cart"); };
   const details: Record<string, React.ReactNode> = {
     description: <p>{product.description}</p>,
     ingredients: <ul>{product.ingredients.map((item) => <li key={item}>{item}</li>)}</ul>,
@@ -32,11 +42,11 @@ export function ProductDetail({ product }: { product: Product }) {
   return (
     <main className="store-page site-redesign product-page">
       <div className="store-container">
-        <nav className="store-breadcrumb" aria-label="Breadcrumb"><a href="/">Home</a><span>/</span><a href="/shop">Shop</a><span>/</span><span aria-current="page">{product.name}</span></nav>
+        <nav className="store-breadcrumb" aria-label="Breadcrumb"><Link href="/">Home</Link><span>/</span><Link href="/shop">Shop</Link><span>/</span><span aria-current="page">{product.name}</span></nav>
         <section className="product-detail-layout">
           <div className="product-gallery">
-            <div className="product-gallery-main"><img src={imageUrl(images[imageIndex])} alt={product.name} /></div>
-            {images.length > 1 && <div className="product-gallery-thumbnails" aria-label="Product images">{images.map((image, index) => <button className={imageIndex === index ? "is-active" : ""} type="button" aria-label={`Show product image ${index + 1}`} aria-pressed={imageIndex === index} onClick={() => setImageIndex(index)} key={`${image}-${index}`}><img src={imageUrl(image)} alt="" loading="lazy" /></button>)}</div>}
+            <div className="product-gallery-main"><GalleryImage src={images[imageIndex]} alt={product.name} sizes="(max-width: 760px) 92vw, 540px" priority /></div>
+            {images.length > 1 && <div className="product-gallery-thumbnails" aria-label="Product images">{images.map((image, index) => <button className={imageIndex === index ? "is-active" : ""} type="button" aria-label={`Show product image ${index + 1}`} aria-pressed={imageIndex === index} onClick={() => setImageIndex(index)} key={`${image}-${index}`}><GalleryImage src={image} alt="" sizes="78px" /></button>)}</div>}
           </div>
           <section className="product-purchase-panel" aria-labelledby="product-title">
             <p className="store-eyebrow">{category}</p><h1 id="product-title">{product.name}</h1>
@@ -47,7 +57,7 @@ export function ProductDetail({ product }: { product: Product }) {
             <div className="product-quantity-row"><span>Quantity</span><div className="product-quantity-control"><button type="button" aria-label="Decrease quantity" onClick={() => setQuantity((value) => Math.max(1, value - 1))}>−</button><output aria-label="Quantity">{quantity}</output><button type="button" aria-label="Increase quantity" onClick={() => setQuantity((value) => value + 1)}>+</button></div></div>
             <div className="product-detail-actions"><button className="store-button store-button-primary" type="button" disabled={product.availability !== "in-stock"} onClick={() => { addToCart(product.id, quantity); setMessage("Added to cart"); }}>Add to Cart</button><button className="store-button store-button-secondary" type="button" disabled={product.availability !== "in-stock"} onClick={buyNow}>Add &amp; View Cart</button><button className={`product-detail-wishlist${wished ? " is-saved" : ""}`} type="button" aria-pressed={wished} onClick={() => { toggleWishlist(product.id); setMessage(wished ? "Removed from wishlist" : "Added to wishlist"); }}>{wished ? "♥ Saved" : "♡ Save"}</button></div>
             {message && <p className="product-action-message" role="status">{message}</p>}
-            <div className="product-service-notes"><div><span aria-hidden="true">✓</span><p><strong>Free delivery</strong><br />Shipping calculated at checkout.</p></div><div><span aria-hidden="true">↺</span><p><strong>Need help?</strong><br /><a href="/contact">Contact customer support</a></p></div></div>
+            <div className="product-service-notes"><div><span aria-hidden="true">✓</span><p><strong>Free delivery</strong><br />Shipping calculated at checkout.</p></div><div><span aria-hidden="true">↺</span><p><strong>Need help?</strong><br /><Link href="/contact">Contact customer support</Link></p></div></div>
           </section>
         </section>
 

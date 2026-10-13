@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type TouchEvent } from "react";
+import Link from "next/link";
 
 const slides = [
   {
@@ -162,7 +163,7 @@ export function HomeHero() {
                 decoding="async"
               />
               {slide.shopCta && (
-                <a
+                <Link
                   className={`home-hero-shop-link home-hero-shop-link-${slide.shopCta.position}`}
                   href={slide.shopCta.href}
                   aria-label={slide.shopCta.label}

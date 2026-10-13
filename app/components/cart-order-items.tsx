@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { categories } from "../../scripts/data.js";
 import { calculateCartTotals, resolveCartRows, formatMoney, type CartDisplayRow } from "./cart-data";
 import { useStore } from "./store-context";
@@ -8,9 +10,9 @@ import { useStore } from "./store-context";
 function CartItemImage({ row }: { row: CartDisplayRow }) {
   const [failed, setFailed] = useState(false);
   if (failed || !row.product) return <span className="cart-item-image cart-image-fallback" aria-label="Product image unavailable">Image unavailable</span>;
-  return <a className="cart-item-image" href={`/product/${row.product.slug}`}>
-    <img src={`/${row.product.image}`} alt={row.product.name} onError={() => setFailed(true)} />
-  </a>;
+  return <Link className="cart-item-image" href={`/product/${row.product.slug}`}>
+    <Image src={`/${row.product.image}`} alt={row.product.name} width={1200} height={1200} sizes="132px" onError={() => setFailed(true)} />
+  </Link>;
 }
 
 export function CartOrderItems({ readOnly = false }: { readOnly?: boolean }) {
@@ -32,7 +34,7 @@ export function CartOrderItems({ readOnly = false }: { readOnly?: boolean }) {
         <CartItemImage row={row} />
         <div className="cart-item-main">
           <p className="commerce-product-category">{category}</p>
-          <h2><a href={`/product/${product.slug}`}>{product.name}</a></h2>
+          <h2><Link href={`/product/${product.slug}`}>{product.name}</Link></h2>
           <p className="cart-item-unit-price">{formatMoney(product.price)} <span>each</span></p>
           <p className={`cart-item-stock${available ? " is-available" : " is-unavailable"}`}>{available ? "In stock" : "Currently unavailable"}</p>
           {!readOnly && <div className="cart-quantity-control" aria-label={`Quantity for ${product.name}`}>

@@ -1,0 +1,34 @@
+rules_version = '2';
+
+// Deploy with:  firebase deploy --only firestore:rules
+//
+// The Admin SDK used by the API routes bypasses these rules entirely, so the
+// server remains fully authoritative. Everything below constrains browsers only.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /orders/{orderId} {
+      // A signed-in user may read only their own orders.
+      allow read: if request.auth != null
+                  && resource.data.userId == request.auth.uid;
+
+      // No client writes at all. status, amounts, razorpayPaymentId and every
+      // other field are set exclusively by the server after signature
+      // verification, so a browser can never mark an order paid.
+      allow create, update, delete: if false;
+    }
+
+    match /newsletterSubscribers/{subscriberId} {
+      // Subscriber addresses are never exposed to a browser: no read, no list,
+      // no write. Records are created solely by /api/newsletter/subscribe via
+      // the Admin SDK, which bypasses these rules. A future admin interface
+      // must read through an authenticated server route, not from the client.
+      allow read, list, create, update, delete: if false;
+    }
+
+    // Deny everything not explicitly matched above.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -1,10 +1,20 @@
 import type { Metadata } from "next";
+import Image from "next/image";
+import Link from "next/link";
 import "../styles/main.css";
 import "../styles/storefront.css";
 import { SiteHeader } from "./components/site-header";
 import { StoreProvider } from "./components/store-context";
+import { AuthProvider } from "./components/auth-context";
+import { AuthModal } from "./components/auth-modal";
 import { RoutePageMode } from "./components/route-page-mode";
+import { pageModeFor } from "./components/page-mode";
+import { SOCIAL_LINKS } from "./components/social-links";
 import { contactInfo } from "../scripts/data.js";
+
+// Runs synchronously as the first child of <body>, so the route-specific
+// styling is correct before the first paint instead of after hydration.
+const pageModeScript = `document.body.dataset.page=(${pageModeFor})(location.pathname)`;
 
 export const metadata: Metadata = {
   title: "Celeranaturals | Natural Wellness, Premium Care",
@@ -18,15 +28,25 @@ function SiteFooter() {
       <div className="container footer-grid">
         <div>
           <div className="brand">
-            <img className="logo-badge" src="/assets/images/brand/logo.png" alt="Celeranaturals" />
+            <Image className="logo-badge" src="/assets/images/brand/logo.png" alt="Celeranaturals" width={300} height={300} sizes="50px" />
             <div className="brand-title"><strong>CELERANATURALS</strong><span>By Celera Healthcare</span></div>
           </div>
           <p style={{ marginTop: "0.8rem", color: "#d6d0c3", lineHeight: 1.7 }}>Celeranaturals by Celera Healthcare offers nutraceutical products across digestive care, vitamins, probiotics and protein categories.</p>
           <p style={{ margin: "0.6rem 0 0", color: "#d6d0c3" }}>Email: info@celerahealthcare.com<br />Support: +91 98113 51137</p>
         </div>
-        <div><h4 className="footer-title">Products</h4><div className="footer-links"><a href="/shop">Products</a><a href="/shop?category=psyllium-husk">Psyllium Husk</a><a href="/shop?category=vitamins-minerals">Vitamins and Minerals</a><a href="/shop?category=probiotics">Probiotics</a><a href="/shop?category=protein">Protein</a></div></div>
-        <div><h4 className="footer-title">Company</h4><div className="footer-links"><a href="/about">About Us</a><a href="/contact">Contact</a><a href="/account">My Account</a><a href="/shop">All Products</a></div></div>
+        <div><h4 className="footer-title">Products</h4><div className="footer-links"><Link href="/shop">Products</Link><Link href="/shop?category=psyllium-husk">Psyllium Husk</Link><Link href="/shop?category=vitamins-minerals">Vitamins and Minerals</Link><Link href="/shop?category=probiotics">Probiotics</Link><Link href="/shop?category=protein">Protein</Link></div></div>
+        <div><h4 className="footer-title">Company</h4><div className="footer-links"><Link href="/about">About Us</Link><Link href="/contact">Contact</Link><Link href="/account">My Account</Link><Link href="/shop">All Products</Link></div></div>
         <div><h4 className="footer-title">Policies</h4><div className="footer-links"><a href="https://celeranaturals.com/policies/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy</a><a href="https://celeranaturals.com/policies/refund-policy" target="_blank" rel="noopener noreferrer">Refund Policy</a><a href="https://celeranaturals.com/policies/terms-of-service" target="_blank" rel="noopener noreferrer">Terms of Service</a><a href="https://celeranaturals.com/policies/shipping-policy" target="_blank" rel="noopener noreferrer">Shipping Policy</a></div></div>
+        <div>
+          <h4 className="footer-title">Stay Connected</h4>
+          <nav className="footer-social" aria-label="Social media">
+            {SOCIAL_LINKS.map(({ name, href, icon }) => (
+              <a key={name} className="footer-social-link" href={href} target="_blank" rel="noopener noreferrer" aria-label={`Celera Healthcare on ${name}`}>
+                <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">{icon}</svg>
+              </a>
+            ))}
+          </nav>
+        </div>
       </div>
       <div className="container copyright">© 2026 Celera Healthcare Pvt. Ltd. All rights reserved.</div>
     </footer>
@@ -54,5 +74,8 @@ function WhatsAppButton() {
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en"><body data-page="home"><StoreProvider><RoutePageMode /><SiteHeader />{children}<SiteFooter /><WhatsAppButton /></StoreProvider></body></html>;
+  // suppressHydrationWarning: the inline script below sets data-page on <body>
+  // before React hydrates, so React would otherwise report the attribute it did
+  // not render as a mismatch. Scoped to this element's own attributes only.
+  return <html lang="en"><body suppressHydrationWarning><script dangerouslySetInnerHTML={{ __html: pageModeScript }} /><AuthProvider><StoreProvider><RoutePageMode /><SiteHeader />{children}<SiteFooter /><WhatsAppButton /><AuthModal /></StoreProvider></AuthProvider></body></html>;
 }

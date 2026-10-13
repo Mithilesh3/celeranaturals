@@ -1,6 +1,8 @@
 import Image from "next/image";
+import Link from "next/link";
 import { categories, faq, products, testimonials } from "../scripts/data.js";
 import { HomeHero } from "./components/home-hero";
+import { NewsletterForm } from "./components/newsletter-form";
 import { ProductCard } from "./components/product-card";
 
 const assurances = [
@@ -59,37 +61,37 @@ export default function HomePage() {
             <div className="home-category-title-row"><svg className="home-category-leaf" viewBox="0 0 32 32" aria-hidden="true"><path d="M27.7 4.3C16.3 3.6 7.3 7.9 5.5 16.1c-1.1 5 2.6 9.4 7.1 8.4 8.2-1.8 12.5-10.8 12-20.2Z" /><path d="M4.3 28.2c4.6-7.4 10.1-12.7 18.2-17.3" /></svg><h2 className="section-title" id="home-category-title">Shop by Category</h2></div>
             <p>Explore wellness essentials for your daily routine</p>
           </div>
-          <a className="home-category-all-link" href="/shop">View all categories <span aria-hidden="true">→</span></a>
+          <Link className="home-category-all-link" href="/shop">View all categories <span aria-hidden="true">→</span></Link>
         </header>
         <div className="home-category-grid" role="region" aria-label="Browse wellness categories" tabIndex={0}>{categories.map((category) => {
           const href = `/shop?category=${category.slug}`;
           return <article className="home-category-item" key={category.id}>
-            <a className="home-category-image-link" href={href} aria-label={`Explore ${category.name} products`}><span className="home-category-image-frame"><Image src={categoryCutouts[category.id] ?? `/${category.image}`} alt={category.name} width={1254} height={1254} sizes="(max-width: 520px) 112px, (max-width: 1024px) 148px, 170px" loading="lazy" /></span></a>
-            <h3><a href={href}>{category.name}</a></h3>
+            <Link className="home-category-image-link" href={href} aria-label={`Explore ${category.name} products`}><span className="home-category-image-frame"><Image src={categoryCutouts[category.id] ?? `/${category.image}`} alt={category.name} width={1254} height={1254} sizes="(max-width: 520px) 112px, (max-width: 1024px) 148px, 170px" loading="lazy" /></span></Link>
+            <h3><Link href={href}>{category.name}</Link></h3>
             <p>{category.description}</p>
-            <a className="home-category-explore" href={href}><span>Explore Products</span><span className="home-category-arrow" aria-hidden="true">→</span></a>
+            <Link className="home-category-explore" href={href}><span>Explore Products</span><span className="home-category-arrow" aria-hidden="true">→</span></Link>
           </article>;
         })}</div>
       </div></section>
 
-      <section className="section section-soft home-products-wrap home-featured-products"><div className="container"><div className="section-head section-head-row"><div><span className="home-featured-eyebrow">Celera Healthcare · Wellness essentials</span><h2 className="section-title">Featured Products</h2></div><a className="section-link" href="/shop">View all products →</a></div><div className="commerce-product-grid home-featured-grid">{featuredProducts.map((product) => <ProductCard key={product.id} product={product} showFeedback showDiscountBadge showBuyNow />)}</div></div></section>
+      <section className="section section-soft home-products-wrap home-featured-products"><div className="container"><div className="section-head section-head-row"><div><span className="home-featured-eyebrow">Celera Healthcare · Wellness essentials</span><h2 className="section-title">Featured Products</h2></div><Link className="section-link" href="/shop">View all products →</Link></div><div className="commerce-product-grid home-featured-grid">{featuredProducts.map((product) => <ProductCard key={product.id} product={product} showFeedback showDiscountBadge showBuyNow />)}</div></div></section>
 
       <section className="section home-leadership-wrap" aria-labelledby="home-leadership-title"><div className="container"><header className="home-leadership-heading"><span className="home-featured-eyebrow">The people behind Celera</span><h2 className="section-title" id="home-leadership-title">Meet Our Leadership Team</h2></header><div className="home-leadership-grid">{leadershipTeam.map((person) => <article className="home-leadership-card" key={person.name}><div className="home-leadership-photo"><Image src={person.image} alt={person.name} width={500} height={480} sizes="(max-width: 560px) 112px, (max-width: 900px) 45vw, 360px" /></div><div className="home-leadership-info"><h3>{person.name}</h3><p className="home-leadership-role">{person.role}</p><p className="home-leadership-bio">{person.bio}</p></div></article>)}</div></div></section>
 
-      <section className="section section-ivory home-about-wrap"><div className="container"><div className="story-grid home-about-grid"><div className="story-copy reveal home-about-copy"><span className="pill">About Celeranaturals</span><h2 className="section-title home-about-title">Celeranaturals is the consumer wellness brand of Celera Healthcare.</h2><p className="section-sub">We deliver category-led nutraceutical solutions across digestive care, vitamins, probiotics and protein support, with transparent product information and responsive customer support.</p><a className="btn btn-secondary" href="/about">About Celeranaturals</a></div><div className="story-media reveal home-about-media"><div className="about-stage" aria-label="Celeranaturals product categories">
+      <section className="section section-ivory home-about-wrap"><div className="container"><div className="story-grid home-about-grid"><div className="story-copy reveal home-about-copy"><span className="pill">About Celeranaturals</span><h2 className="section-title home-about-title">Celeranaturals is the consumer wellness brand of Celera Healthcare.</h2><p className="section-sub">We deliver category-led nutraceutical solutions across digestive care, vitamins, probiotics and protein support, with transparent product information and responsive customer support.</p><Link className="btn btn-secondary" href="/about">About Celeranaturals</Link></div><div className="story-media reveal home-about-media"><div className="about-stage" aria-label="Celeranaturals product categories">
         <div className="about-product-tile"><Image src="/assets/images/category-cutouts/psyllium-husk.png" alt="Psyllium Husk product" width={1254} height={1254} sizes="(max-width: 768px) 40vw, 220px" loading="lazy" /><span>Psyllium Husk</span></div>
         <div className="about-product-tile"><Image src="/assets/images/category-cutouts/vitamins-minerals.png" alt="Vitamins and Minerals products" width={1254} height={1254} sizes="(max-width: 768px) 40vw, 220px" loading="lazy" /><span>Vitamins &amp; Minerals</span></div>
         <div className="about-product-tile"><Image src="/assets/images/category-cutouts/probiotics.png" alt="Probiotic products" width={1254} height={1254} sizes="(max-width: 768px) 40vw, 220px" loading="lazy" /><span>Probiotics</span></div>
         <div className="about-product-tile"><Image src="/assets/images/category-cutouts/protein.png" alt="Protein supplement" width={1254} height={1254} sizes="(max-width: 768px) 40vw, 220px" loading="lazy" /><span>Protein</span></div>
       </div></div></div></div></section>
 
-      <section className="section section-deep promo-wrap"><div className="container"><div className="banner reveal home-support-banner"><span className="pill" style={{ background: "rgba(255,255,255,0.2)", color: "#fff" }}>Support and Policies</span><h2 className="section-title banner-title">Need help with products, orders or shipping?</h2><p style={{ margin: 0, color: "#d8eced", maxWidth: "60ch" }}>Contact details and policy links are available across the website for quick assistance and order clarity.</p><div><a className="btn btn-ghost" href="/contact">Contact Support</a></div></div></div></section>
+      <section className="section section-deep promo-wrap"><div className="container"><div className="banner reveal home-support-banner"><span className="pill" style={{ background: "rgba(255,255,255,0.2)", color: "#fff" }}>Support and Policies</span><h2 className="section-title banner-title">Need help with products, orders or shipping?</h2><p style={{ margin: 0, color: "#d8eced", maxWidth: "60ch" }}>Contact details and policy links are available across the website for quick assistance and order clarity.</p><div><Link className="btn btn-ghost" href="/contact">Contact Support</Link></div></div></div></section>
 
       <section className="section section-beige testimonials-wrap home-testimonials-wrap"><div className="container"><div className="section-head"><h2 className="section-title">Customer Feedback</h2></div><div className="testimonial-grid">{testimonials.map((item) => <article className="testimonial-line reveal" key={item.id}><div className="rating" aria-label={`${item.rating} out of 5 stars`}>{"★".repeat(item.rating)}</div><p>{item.review}</p><strong>{item.name}</strong></article>)}</div></div></section>
 
       <section className="section faq-wrap home-faq-wrap"><div className="container"><div className="section-head"><h2 className="section-title">Frequently Asked Questions</h2></div><div className="list-page-grid">{faq.map((item) => <details className="faq-item reveal" key={item.q}><summary>{item.q}</summary><p>{item.a}</p></details>)}</div></div></section>
 
-      <section className="section newsletter-wrap section-deep home-newsletter-wrap"><div className="container newsletter-card"><h2 className="section-title newsletter-title">Subscribe for Product Updates</h2><p className="section-sub">Get concise updates on new products and stock availability.</p><form className="newsletter"><input type="email" placeholder="Enter your email" aria-label="Email" disabled /><button className="btn btn-primary" type="button" disabled>Coming Soon</button></form></div></section>
+      <section className="section newsletter-wrap section-deep home-newsletter-wrap"><div className="container newsletter-card"><h2 className="section-title newsletter-title">Subscribe for Product Updates</h2><p className="section-sub">Get concise updates on new products and stock availability.</p><NewsletterForm /></div></section>
     </main>
   );
 }
