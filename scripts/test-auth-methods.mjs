@@ -77,13 +77,14 @@ try {
   check("phone OTP is not the required default", s.phoneField === false);
   await screenshot(cdp, undefined, ".audit/auth-email-390.png");
 
-  // ---- phone OTP is still reachable ------------------------------------
-  await evaluate(cdp, undefined, `(() => { const b=[...document.querySelectorAll('button')].find(x=>/mobile number instead/i.test(x.textContent||'')); if(b) b.click(); return 1; })()`);
-  await sleep(600);
-  s = await modalState();
-  check("phone OTP remains available as an option", s.phoneField === true);
-  await evaluate(cdp, undefined, `(() => { const b=[...document.querySelectorAll('button')].find(x=>/email and password instead/i.test(x.textContent||'')); if(b) b.click(); return 1; })()`);
-  await sleep(600);
+  // ---- mobile OTP sign-in has been removed from this flow --------------
+  const otpUi = await evaluate(cdp, undefined, `(() => ({
+    link: /mobile number instead/i.test(document.body.textContent || ''),
+    field: !!document.querySelector('#auth-phone'),
+    boxes: !!document.querySelector('.otp-boxes'),
+  }))()`);
+  check("no mobile OTP link, field or code boxes remain",
+    otpUi.link === false && otpUi.field === false && otpUi.boxes === false, JSON.stringify(otpUi));
 
   // ---- sign in with a non-existent account shows a real error ----------
   await setField("#auth-email", `no-such-${stamp}@example.invalid`);

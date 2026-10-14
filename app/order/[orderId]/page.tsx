@@ -124,6 +124,7 @@ export default function OrderPage({ params }: { params: Promise<{ orderId: strin
           timeline={order.timeline}
           tracking={order.tracking}
           estimate={estimate}
+          estimatedDeliveryDate={order.estimatedDeliveryDate}
           updatedAt={order.updatedAt}
         />
 

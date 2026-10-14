@@ -5,6 +5,7 @@ import {
   type FulfilmentStatus, type Tracking,
 } from "../../lib/fulfilment";
 import { addressLines, formatIST, hasAddressDetails, type OrderAddress } from "../../lib/orders";
+import { formatEstimateDate } from "../../lib/delivery-estimate";
 
 /** What each step means to a customer, so the timeline is not just status words. */
 const STEP_HINT: Record<FulfilmentStatus, string> = {
@@ -26,13 +27,24 @@ const dayOnly = (iso: string) => {
   } catch { return iso; }
 };
 
-function Estimate({ estimate }: { estimate: EstimateWindow }) {
-  // No courier API is integrated, so there is nothing to estimate from unless
-  // the business has configured a window. Saying so is better than a guess.
+function Estimate({ estimate, estimatedDeliveryDate }: { estimate: EstimateWindow; estimatedDeliveryDate?: string | null }) {
+  // A date set for THIS order by the team is the most reliable thing we have,
+  // so it wins over any configured generic window.
+  if (estimatedDeliveryDate) {
+    return (
+      <p className="track-estimate">
+        Estimated Delivery: <strong>{formatEstimateDate(estimatedDeliveryDate)}</strong>
+        <small>Confirmed for this order by our team.</small>
+      </p>
+    );
+  }
+
+  // Otherwise fall back to a configured window, and if there is none, say the
+  // estimate is coming rather than inventing one.
   if (!estimate) {
     return (
       <p className="track-estimate track-estimate--none">
-        Delivery estimate unavailable
+        Delivery estimate will be updated soon.
         <small>We&rsquo;ll update this page as your order progresses.</small>
       </p>
     );
@@ -49,12 +61,14 @@ function Estimate({ estimate }: { estimate: EstimateWindow }) {
 }
 
 export function DeliveryTracking({
-  fulfilment, timeline, tracking, estimate, updatedAt,
+  fulfilment, timeline, tracking, estimate, estimatedDeliveryDate, updatedAt,
 }: {
   fulfilment: FulfilmentStatus;
   timeline: TimelineEntry[];
   tracking: Tracking | null;
   estimate: EstimateWindow;
+  /** Per-order date set by an operator; takes precedence over any window. */
+  estimatedDeliveryDate?: string | null;
   updatedAt: string;
 }) {
   const cancelled = fulfilment === "cancelled";
@@ -80,7 +94,7 @@ export function DeliveryTracking({
         </div>
       ) : (
         <>
-          <Estimate estimate={estimate} />
+          <Estimate estimate={estimate} estimatedDeliveryDate={estimatedDeliveryDate} />
           <ol className="track-steps">
             {DELIVERY_STEPS.map((step, index) => {
               const state = index < reached ? "done" : index === reached ? "current" : "upcoming";

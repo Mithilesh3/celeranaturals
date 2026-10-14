@@ -1348,13 +1348,18 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
 .account-tabbar button.is-active::after { transform: scaleX(1); }
 .account-tabbar button:focus-visible { outline: 3px solid rgba(8, 129, 102, 0.3); outline-offset: -2px; }
 
-.account-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; gap: 1rem; }
-.account-grid__wide { grid-column: span 2; }
+/* Two asymmetric columns: Recent orders gets the wider one, Profile the
+   narrower. Four cards then lay out as orders|profile over wishlist|addresses
+   with no empty third cell. */
+.account-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); align-items: start; gap: 0.85rem; }
+.account-grid__wide { grid-column: auto; }
 /* Tabs that show one or two cards must not sit in a 3-column track, which
    would leave a third to two-thirds of the row visibly empty. */
 .account-grid--two { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 860px; }
 .account-grid--one { grid-template-columns: minmax(0, 1fr); max-width: 520px; }
-.account-grid > .panel { height: 100%; }
+/* Previously height:100%, which stretched every card to the tallest in its
+   row: on desktop that left 400px of dead space under Recent orders, and at
+   768px it inflated Wishlist from ~180px to 508px. Cards size to content. */
 
 .panel__headrow { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.4rem 1rem; margin-bottom: 0.9rem; }
 .panel__headrow .panel__heading { margin: 0; }
@@ -1416,7 +1421,7 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
   .checkout-layout { grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.9fr); gap: 1rem; }
   /* Two columns; the wide card keeps its full-row emphasis. */
   .account-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .account-grid__wide { grid-column: span 2; }
+  .account-grid__wide { grid-column: auto; }
 }
 
 @media (max-width: 900px) {
@@ -2040,3 +2045,66 @@ body[data-page="home"] main > .home-leadership-wrap {
 .profile-unverified { background: var(--surface-tinted); color: var(--store-muted); }
 /* Breathing room between stacked fields in the email sign-in form. */
 .auth-dialog input + label, .auth-dialog .auth-password-field + label { margin-top: 0.85rem; }
+
+/* ── /account compaction ─────────────────────────────────────────────────────
+   Scoped to .account-page so other pages that share .panel and .detail-list
+   are untouched. Driven by measured dead space, not by eyeballing.          */
+.account-page .panel { padding: clamp(0.8rem, 1.5vw, 1.05rem); border-radius: 14px; }
+.account-page .panel__heading { font-size: 0.96rem; }
+.account-page .panel__hint { margin-bottom: 0.6rem; font-size: 0.8rem; line-height: 1.5; }
+.account-page .panel__headrow { margin-bottom: 0.55rem; }
+
+/* Shorter welcome banner, tighter run into the tabs. */
+.account-welcome { margin-bottom: 0.65rem; padding: 0.6rem 0.85rem; gap: 0.7rem; border-radius: 12px; }
+.account-welcome__avatar { width: 40px; height: 40px; flex: 0 0 40px; font-size: 1rem; }
+.account-welcome__greeting { font-size: 0.72rem; }
+.account-welcome__name { font-size: 0.96rem; }
+.account-tabbar { margin-bottom: 0.8rem; }
+
+/* Detail rows: two columns once there is room, and tighter rhythm. */
+.account-page .detail-list { gap: 0.4rem; margin-bottom: 0.6rem; }
+.account-page .detail-list > div { padding-bottom: 0.4rem; }
+.account-page .detail-list dt { font-size: 0.72rem; }
+.account-page .detail-list dd { font-size: 0.84rem; }
+.account-page .order-list { gap: 0.45rem; }
+.account-page .account-stat { margin-bottom: 0.2rem; }
+.account-page .account-stat strong { font-size: 1.15rem; }
+
+/* The sign-out action stays visually separate but no longer floats in space. */
+.account-page .account-signout { margin-top: 0.9rem; padding-top: 0.8rem; border-top: 1px solid var(--border-hairline); }
+
+@media (min-width: 900px) {
+  /* Six profile facts read better as a 2-up grid than a tall single column. */
+  .account-page .detail-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.4rem 1rem; }
+  .account-page .detail-list > div:nth-last-child(-n+2):nth-child(odd):last-child { grid-column: 1 / -1; }
+}
+
+@media (max-width: 899px) {
+  /* Tablet: two equal columns. The --one and --two variants carry their own
+     column counts for the Profile and Wishlist tabs and must not be caught. */
+  .account-grid:not(.account-grid--one):not(.account-grid--two) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 680px) {
+  .account-grid, .account-grid--two { grid-template-columns: minmax(0, 1fr); }
+  .account-page .panel { padding: 0.8rem 0.85rem; }
+  .account-welcome { padding: 0.55rem 0.75rem; }
+}
+/* Each Overview column stacks independently, so a tall Profile card cannot
+   push Wishlist down and open a gap beneath Recent orders. */
+.account-col { display: grid; gap: 0.85rem; align-content: start; min-width: 0; }
+
+@media (max-width: 680px) {
+  /* Single column: the wrappers dissolve so the cards become grid items and
+     can be ordered by importance rather than by which column they sat in. */
+  .account-col { display: contents; }
+  .account-col:nth-child(1) > :nth-child(1) { order: 1; }  /* Recent orders */
+  .account-col:nth-child(2) > :nth-child(1) { order: 2; }  /* Profile */
+  .account-col:nth-child(1) > :nth-child(2) { order: 3; }  /* Wishlist */
+  .account-col:nth-child(2) > :nth-child(2) { order: 4; }  /* Saved addresses */
+}
+/* Forgot-password link sits on its own row under the password field so it can
+   never overlap the Show toggle or the reCAPTCHA badge. */
+.auth-forgot { margin: 0.4rem 0 0; text-align: right; }
+.auth-forgot .auth-linkish { min-height: 32px; font-size: 0.8rem; }
+.auth-reset-sent { padding: 0.7rem 0.85rem; border: 1px solid #bfe0cc; border-radius: 11px; background: #eef8f1; color: #0f6b4f; }

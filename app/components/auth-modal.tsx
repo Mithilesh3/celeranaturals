@@ -3,39 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  GoogleAuthProvider, RecaptchaVerifier, createUserWithEmailAndPassword,
-  signInWithEmailAndPassword, signInWithPhoneNumber, signInWithPopup, signInWithRedirect,
-  updateProfile, type ConfirmationResult,
+  GoogleAuthProvider, createUserWithEmailAndPassword, sendPasswordResetEmail,
+  signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, updateProfile,
 } from "firebase/auth";
 import { getFirebaseAuth } from "./firebase";
 import { useAuth } from "./auth-context";
 import { useStore } from "./store-context";
-import { OtpInput } from "./otp-input";
-import { describeError, errorCode, VERIFICATION_TIMEOUT_MESSAGE } from "../../lib/auth-errors";
+import { describeError, errorCode } from "../../lib/auth-errors";
 
-/**
- * Invisible reCAPTCHA normally resolves in a second or two. If it is blocked —
- * by an extension, a strict network, or a browser that cannot reach Google's
- * challenge — signInWithPhoneNumber never settles and the dialog would spin
- * forever with no explanation. This bounds that wait.
- */
-const VERIFICATION_TIMEOUT_MS = 45_000;
-
-const withTimeout = <T,>(work: Promise<T>, ms: number): Promise<T> =>
-  Promise.race([
-    work,
-    new Promise<never>((_resolve, reject) =>
-      setTimeout(() => reject(new Error("verification-timeout")), ms),
-    ),
-  ]);
-
-const INDIAN_MOBILE = /^[6-9]\d{9}$/;
-const RESEND_SECONDS = 30;
-const MAX_RESENDS = 3;
-const LOCKOUT_MINUTES = 15;
+/** Loose client-side shape check only; Firebase is the real validator. */
+const EMAIL_SHAPE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]),select,textarea,[tabindex]:not([tabindex="-1"])';
-
-const formatPhone = (digits: string) => digits.length === 10 ? `+91 ${digits.slice(0, 5)} ${digits.slice(5)}` : `+91 ${digits}`;
 
 /** Brand lockup so the dialog reads as Celera Naturals, not a generic form. */
 function AuthBrand() {
@@ -62,30 +40,20 @@ export function AuthModal() {
 
   // Email + password is the default route in. Phone OTP is still offered and
   // unchanged, but is no longer required to create an account.
-  const [step, setStep] = useState<"email" | "phone" | "otp" | "name">("email");
+  const [step, setStep] = useState<"email" | "reset" | "name">("email");
   const [mode, setMode] = useState<"signin" | "signup">("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
+  // Reset flow: its own email field, pre-filled from the login form.
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetSent, setResetSent] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [errCode, setErrCode] = useState("");
-  const [cooldown, setCooldown] = useState(0);
-  const [resends, setResends] = useState(0);
-  const [lockedUntil, setLockedUntil] = useState(0);
 
   const dialogRef = useRef<HTMLDivElement | null>(null);
-  const recaptchaRef = useRef<HTMLDivElement | null>(null);
-  const verifierRef = useRef<RecaptchaVerifier | null>(null);
-  const confirmationRef = useRef<ConfirmationResult | null>(null);
-
-  const resetVerifier = useCallback(() => {
-    try { verifierRef.current?.clear(); } catch { /* already detached */ }
-    verifierRef.current = null;
-  }, []);
 
   /**
    * The single "session established" path. Phone OTP calls it today; an OAuth
@@ -101,17 +69,16 @@ export function AuthModal() {
   }, [intent, closeAuth, addToCart, router]);
 
   // Reset to a clean state each time the dialog opens. Email + password is the
-  // entry point; phone OTP is one tap away but no longer required.
+  // entry point. Mobile OTP sign-in is no longer offered.
   useEffect(() => {
     if (!isAuthOpen) return;
     setStep(needsProfile ? "name" : "email");
-    setCode(""); setError(""); setErrCode(""); setBusy(false);
+    setError(""); setErrCode(""); setBusy(false);
     setPassword("");
   }, [isAuthOpen, needsProfile]);
 
-  // "email" and "phone" are both entry steps: either can be the one on screen
-  // when a session appears or when an already-signed-in user opens the dialog.
-  const atEntryStep = step === "email" || step === "phone";
+  // The email step is where a session can appear while the dialog is open.
+  const atEntryStep = step === "email";
 
   // A signed-in user with a complete profile never sees the flow.
   useEffect(() => {
@@ -122,21 +89,11 @@ export function AuthModal() {
   }, [isAuthOpen, user, needsProfile, atEntryStep, closeAuth, router]);
 
   // Once Firebase reports a session, move to the name step or finish. Google
-  // and email/password resolve while the entry step is on screen; phone OTP
-  // resolves on the otp step. All three end at the same completeSession().
+  // and email/password both resolve while the entry step is on screen.
   useEffect(() => {
     if (!isAuthOpen || !user) return;
     if (needsProfile) setStep("name");
-    else if (step === "otp") completeSession();
-  }, [isAuthOpen, user, needsProfile, step, completeSession]);
-
-  useEffect(() => {
-    if (cooldown <= 0) return;
-    const timer = window.setInterval(() => setCooldown((value) => Math.max(0, value - 1)), 1000);
-    return () => window.clearInterval(timer);
-  }, [cooldown]);
-
-  useEffect(() => () => resetVerifier(), [resetVerifier]);
+  }, [isAuthOpen, user, needsProfile, completeSession]);
 
   // Escape to close, and a focus trap so Tab cannot leave the dialog.
   useEffect(() => {
@@ -162,47 +119,6 @@ export function AuthModal() {
     };
   }, [isAuthOpen, closeAuth]);
 
-  const sendCode = useCallback(async (isResend: boolean) => {
-    if (!INDIAN_MOBILE.test(phone)) {
-      setError("Enter a valid 10-digit mobile number starting with 6, 7, 8 or 9.");
-      return;
-    }
-    if (Date.now() < lockedUntil) {
-      setError(`Too many code requests. Try again in ${LOCKOUT_MINUTES} minutes.`);
-      return;
-    }
-    if (isResend && resends >= MAX_RESENDS) {
-      setLockedUntil(Date.now() + LOCKOUT_MINUTES * 60_000);
-      setError(`Too many code requests. Try again in ${LOCKOUT_MINUTES} minutes.`);
-      return;
-    }
-    const container = recaptchaRef.current;
-    if (!container) return;
-
-    setBusy(true); setError(""); setErrCode("");
-    try {
-      resetVerifier();
-      // Invisible reCAPTCHA stays enabled for every user, including production.
-      verifierRef.current = new RecaptchaVerifier(getFirebaseAuth(), container, { size: "invisible" });
-      confirmationRef.current = await withTimeout(
-        signInWithPhoneNumber(getFirebaseAuth(), `+91${phone}`, verifierRef.current),
-        VERIFICATION_TIMEOUT_MS,
-      );
-      setStep("otp");
-      setCode("");
-      setCooldown(RESEND_SECONDS);
-      if (isResend) setResends((count) => count + 1);
-    } catch (caught) {
-      // The verifier is single-use once it has been consumed or has failed;
-      // clearing it here is what lets the next attempt render a fresh one.
-      resetVerifier();
-      const timedOut = caught instanceof Error && caught.message === "verification-timeout";
-      setError(timedOut ? VERIFICATION_TIMEOUT_MESSAGE : describeError(caught));
-      setErrCode(timedOut ? "auth/timeout" : errorCode(caught));
-    } finally {
-      setBusy(false);
-    }
-  }, [phone, resends, lockedUntil, resetVerifier]);
 
   /**
    * Continue with Google. A popup keeps the customer on the page; if the
@@ -239,6 +155,40 @@ export function AuthModal() {
   }, [busy]);
 
   /** Email + password sign-in, or account creation with a display name. */
+  /**
+   * Sends a Firebase password-reset email.
+   *
+   * The confirmation is deliberately the same whether or not an account
+   * exists: telling a stranger which addresses are registered is an account
+   * enumeration leak. Firebase's own "user-not-found" is therefore treated as
+   * success here, and only genuine problems (bad address, rate limit, network,
+   * unauthorised domain) surface as errors.
+   */
+  const sendReset = useCallback(async () => {
+    if (busy) return;
+    const address = resetEmail.trim();
+    if (!EMAIL_SHAPE.test(address)) {
+      setError("Enter your registered email address.");
+      setErrCode("");
+      return;
+    }
+    setBusy(true); setError(""); setErrCode(""); setResetSent(false);
+    try {
+      await sendPasswordResetEmail(getFirebaseAuth(), address);
+      setResetSent(true);
+    } catch (caught) {
+      const code = errorCode(caught);
+      if (code === "auth/user-not-found" || code === "auth/invalid-recipient-email") {
+        setResetSent(true);
+        return;
+      }
+      setError(describeError(caught, "reset"));
+      setErrCode(code);
+    } finally {
+      setBusy(false);
+    }
+  }, [busy, resetEmail]);
+
   const submitEmail = useCallback(async () => {
     if (busy) return;
     const address = email.trim();
@@ -262,29 +212,6 @@ export function AuthModal() {
     }
   }, [busy, email, password, mode, name]);
 
-  const verify = useCallback(async (entered: string) => {
-    const confirmation = confirmationRef.current;
-    if (!confirmation) {
-      setStep("phone");
-      setError("That verification session has expired. Request a new code.");
-      return;
-    }
-    if (!/^\d{6}$/.test(entered) || busy) return;
-    setBusy(true); setError(""); setErrCode("");
-    try {
-      await confirmation.confirm(entered);
-      confirmationRef.current = null;
-      resetVerifier();
-      // onAuthStateChanged drives the next step (name, or completeSession).
-    } catch (caught) {
-      setError(describeError(caught));
-      setErrCode(errorCode(caught));
-      setCode("");
-      if (errorCode(caught) === "auth/code-expired") { confirmationRef.current = null; setStep("phone"); }
-    } finally {
-      setBusy(false);
-    }
-  }, [busy, resetVerifier]);
 
   if (!isAuthOpen) return null;
 
@@ -366,6 +293,24 @@ export function AuthModal() {
               </button>
             </div>
 
+            {/* On its own row beneath the field, so it can never collide with
+                the Show control or the reCAPTCHA badge. */}
+            {mode === "signin" && (
+              <p className="auth-forgot">
+                <button
+                  type="button"
+                  className="auth-linkish"
+                  disabled={busy}
+                  onClick={() => {
+                    setResetEmail(email.trim());
+                    setResetSent(false);
+                    setError(""); setErrCode("");
+                    setStep("reset");
+                  }}
+                >Forgot password?</button>
+              </p>
+            )}
+
             <button
               className="store-button store-button-primary auth-submit"
               type="submit"
@@ -382,9 +327,6 @@ export function AuthModal() {
             </p>
 
             <p className="auth-alt">
-              <button type="button" className="auth-linkish" disabled={busy} onClick={() => { setStep("phone"); setError(""); setErrCode(""); }}>
-                Use my mobile number instead
-              </button>
             </p>
 
             <p className="auth-legal">
@@ -393,64 +335,59 @@ export function AuthModal() {
           </form>
         )}
 
-        {step === "phone" && (
-          <form onSubmit={(event) => { event.preventDefault(); if (!busy) void sendCode(false); }}>
+        {/* noValidate below: the browser's own bubble for type="email" would
+            block our submit handler, so the customer would get a native
+            tooltip here and an in-modal message everywhere else. One voice. */}
+        {step === "reset" && (
+          <form noValidate onSubmit={(event) => { event.preventDefault(); void sendReset(); }}>
             <AuthBrand />
-            <h2 id="auth-title">Sign in with your mobile</h2>
-            <p className="auth-sub">Enter your mobile number and we&rsquo;ll text you a one-time code. No password needed.</p>
-            <label htmlFor="auth-phone">Mobile number</label>
-            <div className="phone-auth-field">
-              <span className="phone-auth-prefix" aria-hidden="true">+91</span>
-              <input
-                id="auth-phone"
-                type="tel"
-                inputMode="numeric"
-                autoComplete="tel-national"
-                maxLength={10}
-                placeholder="10-digit mobile number"
-                aria-describedby="auth-message"
-                value={phone}
-                disabled={busy}
-                onChange={(event) => { setPhone(event.target.value.replace(/\D/g, "").slice(0, 10)); setError(""); setErrCode(""); }}
-              />
-            </div>
-            <button className="store-button store-button-primary auth-submit" type="submit" disabled={busy || !INDIAN_MOBILE.test(phone)}>
-              {busy ? "Sending…" : "Continue"}
-            </button>
+            <h2 id="auth-title">Reset your password</h2>
 
-            <p className="auth-alt">
-              <button type="button" className="auth-linkish" disabled={busy} onClick={() => { setStep("email"); setError(""); setErrCode(""); }}>
-                Use email and password instead
-              </button>
-            </p>
-
-            <p className="auth-legal">
-              By continuing you agree to our Terms of Service and Privacy Policy.
-            </p>
-          </form>
-        )}
-
-        {step === "otp" && (
-          <form onSubmit={(event) => { event.preventDefault(); void verify(code); }}>
-            <AuthBrand />
-            <h2 id="auth-title">Enter the code</h2>
-            <p className="auth-sub">
-              Sent to {formatPhone(phone)}.{" "}
-              <button type="button" className="auth-linkish" onClick={() => { setStep("phone"); setCode(""); setError(""); confirmationRef.current = null; resetVerifier(); }}>
-                Change number
-              </button>
-            </p>
-            <OtpInput value={code} onChange={(next) => { setCode(next); setError(""); }} onComplete={verify} disabled={busy} describedBy="auth-message" />
-            <button className="store-button store-button-primary auth-submit" type="submit" disabled={busy || code.length !== 6}>
-              {busy ? "Verifying…" : "Verify"}
-            </button>
-            <p className="auth-resend" aria-live="polite">
-              {cooldown > 0
-                ? `Resend code in ${cooldown}s`
-                : resends >= MAX_RESENDS
-                  ? `Too many requests. Try again in ${LOCKOUT_MINUTES} minutes.`
-                  : <button type="button" className="auth-linkish" disabled={busy} onClick={() => void sendCode(true)}>Resend code</button>}
-            </p>
+            {resetSent ? (
+              <>
+                <p className="auth-sub auth-reset-sent" role="status">
+                  If an account exists for this email, you will receive a password reset link.
+                  Please check your inbox and spam folder.
+                </p>
+                <button
+                  className="store-button store-button-primary auth-submit"
+                  type="button"
+                  onClick={() => { setStep("email"); setResetSent(false); setError(""); setErrCode(""); }}
+                >Back to sign in</button>
+                <p className="auth-alt">
+                  <button type="button" className="auth-linkish" disabled={busy} onClick={() => void sendReset()}>
+                    Resend the email
+                  </button>
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="auth-sub">
+                  Enter your registered email address and we&rsquo;ll send you a link to set a new password.
+                </p>
+                <label htmlFor="auth-reset-email">Email address</label>
+                <input
+                  id="auth-reset-email"
+                  type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
+                  value={resetEmail}
+                  disabled={busy}
+                  aria-describedby="auth-message"
+                  onChange={(event) => { setResetEmail(event.target.value); setError(""); setErrCode(""); }}
+                />
+                <button
+                  className="store-button store-button-primary auth-submit"
+                  type="submit"
+                  disabled={busy || !resetEmail.trim()}
+                >{busy ? "Sending reset link…" : "Send reset link"}</button>
+                <p className="auth-alt">
+                  <button type="button" className="auth-linkish" disabled={busy} onClick={() => { setStep("email"); setError(""); setErrCode(""); }}>
+                    Back to sign in
+                  </button>
+                </p>
+              </>
+            )}
           </form>
         )}
 
@@ -467,7 +404,7 @@ export function AuthModal() {
             {/* The identifier depends on how they signed in, so it is read from
                 the session rather than assuming a phone number. */}
             <p className="auth-sub">
-              Just your name — you&rsquo;re signed in as {user?.email ?? user?.phoneNumber ?? formatPhone(phone)}.
+              Just your name — you&rsquo;re signed in as {user?.email ?? user?.phoneNumber ?? "your new account"}.
             </p>
             <label htmlFor="auth-name">Full name</label>
             <input
@@ -489,7 +426,6 @@ export function AuthModal() {
           {error && <><span className="phone-auth-error">{error}</span>{errCode && <span className="phone-auth-code-hint"> ({errCode})</span>}</>}
         </p>
 
-        <div ref={recaptchaRef} />
       </div>
     </div>
   );

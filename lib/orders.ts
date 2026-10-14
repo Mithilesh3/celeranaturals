@@ -1,5 +1,6 @@
 import type { Amounts, Paise } from "./money";
 import { currentFulfilment, type FulfilmentEvent, type FulfilmentStatus, type Tracking } from "./fulfilment";
+import type { OrderDeliveryEstimate } from "./delivery-estimate";
 
 export type OrderStatus = "created" | "pending" | "paid" | "failed" | "cancelled";
 
@@ -131,6 +132,8 @@ export type StoredOrder = Order & {
   fulfilmentHistory?: FulfilmentEvent[];
   tracking?: Tracking;
   addressHistory?: AddressEvent[];
+  /** Per-order delivery promise set by an operator. Carries no payment meaning. */
+  estimatedDelivery?: OrderDeliveryEstimate;
 };
 
 /**
@@ -146,6 +149,8 @@ export type CustomerOrder = Order & {
   timeline: Array<{ status: FulfilmentStatus; at: string; note?: string }>;
   tracking: Tracking | null;
   addressEdited: boolean;
+  /** Date only (YYYY-MM-DD), or null when an operator has not set one yet. */
+  estimatedDeliveryDate: string | null;
 };
 
 export function toCustomerOrder(stored: StoredOrder): CustomerOrder {
@@ -171,6 +176,8 @@ export function toCustomerOrder(stored: StoredOrder): CustomerOrder {
     })),
     tracking: stored.tracking ?? null,
     addressEdited: Boolean(stored.addressHistory?.length),
+    // Only the date reaches the customer; who set it and when stay internal.
+    estimatedDeliveryDate: stored.estimatedDelivery?.date ?? null,
   };
 }
 

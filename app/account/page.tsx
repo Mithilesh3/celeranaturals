@@ -255,22 +255,30 @@ export default function AccountPage() {
               {tab === "overview" && (
                 <>
                   <div className="account-grid">
-                    <section className="panel account-grid__wide" aria-labelledby="acc-orders">
-                      <div className="panel__headrow">
-                        <h2 id="acc-orders" className="panel__heading">Recent orders</h2>
-                        {Boolean(orders?.length) && (
-                          <button type="button" className="panel__link" onClick={() => setTab("orders")}>View all orders</button>
-                        )}
-                      </div>
-                      {orders === null ? <p className="panel__hint">Loading your orders…</p>
-                        : failed ? <p className="panel__hint">Could not load your orders right now. Please try again shortly.</p>
-                        : orders.length === 0 ? <NoOrders />
-                        : <OrderRows orders={recentOrders} />}
-                    </section>
+                    {/* Two independently flowing columns rather than grid rows:
+                        a shared row height would push Wishlist down to clear the
+                        taller Profile card, leaving a visible gap under Recent
+                        orders. Each column now stacks at its own pace. */}
+                    <div className="account-col">
+                      <section className="panel" aria-labelledby="acc-orders">
+                        <div className="panel__headrow">
+                          <h2 id="acc-orders" className="panel__heading">Recent orders</h2>
+                          {Boolean(orders?.length) && (
+                            <button type="button" className="panel__link" onClick={() => setTab("orders")}>View all orders</button>
+                          )}
+                        </div>
+                        {orders === null ? <p className="panel__hint">Loading your orders…</p>
+                          : failed ? <p className="panel__hint">Could not load your orders right now. Please try again shortly.</p>
+                          : orders.length === 0 ? <NoOrders />
+                          : <OrderRows orders={recentOrders} />}
+                      </section>
+                      {wishlistCard}
+                    </div>
 
-                    {profileCard}
-                    {wishlistCard}
-                    {addressesCard}
+                    <div className="account-col">
+                      {profileCard}
+                      {addressesCard}
+                    </div>
                   </div>
                   {signOutAction}
                 </>

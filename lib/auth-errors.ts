@@ -131,12 +131,13 @@ export const VERIFICATION_TIMEOUT_MESSAGE =
   "Verification is taking too long to start. This is usually a blocked reCAPTCHA. Reload the page, disable any ad or script blocker for this site, and try again.";
 
 /** Which sign-in method produced the error; only changes provider-specific wording. */
-export type AuthMethod = "phone" | "google" | "email";
+export type AuthMethod = "phone" | "google" | "email" | "reset";
 
 const NOT_ENABLED: Record<AuthMethod, string> = {
   phone: "Phone sign-in is not enabled for this Firebase project.",
   google: "Google sign-in is not enabled for this project yet. An administrator needs to turn it on in Firebase Authentication → Sign-in method → Google.",
   email: "Email and password sign-in is not enabled for this Firebase project.",
+  reset: "Password reset is not enabled for this Firebase project.",
 };
 
 export function describeError(error: unknown, method: AuthMethod = "phone"): string {
@@ -156,7 +157,7 @@ export function describeError(error: unknown, method: AuthMethod = "phone"): str
 
   const mapped = AUTH_MESSAGES[code];
   if (mapped !== undefined) return mapped;
-  return method === "phone"
-    ? "Could not complete verification. Please try again."
-    : "Could not sign you in. Please try again.";
+  if (method === "phone") return "Could not complete verification. Please try again.";
+  if (method === "reset") return "Could not send the reset email. Please try again in a moment.";
+  return "Could not sign you in. Please try again.";
 }

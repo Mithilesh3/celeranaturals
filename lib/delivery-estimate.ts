@@ -8,9 +8,102 @@
  * Set it in .env.local as a range of business days, e.g.
  *     DELIVERY_ESTIMATE_DAYS=5-7
  *
- * SERVER ONLY: the variable is read without a NEXT_PUBLIC prefix, so the
- * estimate is computed in API routes and sent to the browser as a value.
+ * Only deliveryEstimate() and isDeliveryEstimateConfigured() read that
+ * variable, and only ever on the server — it has no NEXT_PUBLIC prefix, so in
+ * a browser bundle it would simply be undefined.
+ *
+ * Everything else here (the per-order estimate type, the day presets, the date
+ * helpers and resolveEstimateInput) is pure and client-safe, so the admin
+ * drawer and the server route validate against exactly the same rules.
  */
+/**
+ * Per-order estimate set by an operator in the admin panel.
+ *
+ * This is purely a delivery-time promise. It carries no payment or fulfilment
+ * meaning, and the endpoint that writes it accepts nothing else, so setting it
+ * cannot alter payment status, delivery status, the address or the total.
+ *
+ * `date` is a calendar date, stored as YYYY-MM-DD rather than a timestamp:
+ * "arriving on the 18th" must not shift to the 17th or 19th when read in a
+ * different timezone.
+ */
+export type OrderDeliveryEstimate = {
+  date: string;
+  /** The preset used, when one was, purely so the admin UI can show it again. */
+  days: number | null;
+  setAt: string;
+  setByEmail: string | null;
+};
+
+/** Presets offered in the admin drawer. An exact date is also allowed. */
+export const ESTIMATE_DAY_OPTIONS = [2, 3, 5, 7, 10] as const;
+
+export const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+/** Calendar date in IST for a timestamp, as YYYY-MM-DD. */
+export function istDateKey(value: Date | string = new Date()): string {
+  const date = typeof value === "string" ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return "";
+  const ist = new Date(date.getTime() + (5 * 60 + 30) * 60_000);
+  return ist.toISOString().slice(0, 10);
+}
+
+/** Adds whole calendar days to a YYYY-MM-DD key, staying in date space. */
+export function addDays(dateKey: string, days: number): string {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  const base = Date.UTC(year, month - 1, day);
+  return new Date(base + days * 86_400_000).toISOString().slice(0, 10);
+}
+
+/**
+ * Validates an admin estimate request. Either `days` (a preset) or an explicit
+ * `date` must be supplied; the result is always a concrete calendar date so the
+ * stored value never depends on when it is read.
+ */
+export function resolveEstimateInput(
+  input: { days?: unknown; date?: unknown },
+  orderCreatedAt: string,
+): { ok: true; date: string; days: number | null } | { ok: false; error: string } {
+  const hasDays = input.days !== undefined && input.days !== null && input.days !== "";
+  const hasDate = typeof input.date === "string" && input.date.trim() !== "";
+
+  if (hasDays && hasDate) return { ok: false, error: "Choose either a number of days or a specific date, not both." };
+  if (!hasDays && !hasDate) return { ok: false, error: "Choose a delivery estimate." };
+
+  if (hasDays) {
+    const days = Number(input.days);
+    if (!Number.isInteger(days) || days < 1 || days > 90) {
+      return { ok: false, error: "Delivery estimate must be between 1 and 90 days." };
+    }
+    const from = istDateKey(orderCreatedAt) || istDateKey();
+    return { ok: true, date: addDays(from, days), days };
+  }
+
+  const date = (input.date as string).trim();
+  if (!ISO_DATE.test(date)) return { ok: false, error: "Enter the date as YYYY-MM-DD." };
+  const parsed = new Date(`${date}T00:00:00Z`);
+  if (Number.isNaN(parsed.getTime()) || date !== parsed.toISOString().slice(0, 10)) {
+    return { ok: false, error: "That date does not exist." };
+  }
+  // A delivery date before the order was placed is a typo, not a promise.
+  const orderDay = istDateKey(orderCreatedAt);
+  if (orderDay && date < orderDay) return { ok: false, error: "The estimate cannot be before the order date." };
+  if (date > addDays(istDateKey(), 365)) return { ok: false, error: "The estimate is too far in the future." };
+  return { ok: true, date, days: null };
+}
+
+/** "18 Oct 2026" from a YYYY-MM-DD key, with no timezone shifting. */
+export function formatEstimateDate(dateKey: string): string {
+  if (!ISO_DATE.test(dateKey)) return dateKey;
+  try {
+    return new Intl.DateTimeFormat("en-IN", {
+      day: "numeric", month: "short", year: "numeric", timeZone: "UTC",
+    }).format(new Date(`${dateKey}T00:00:00Z`));
+  } catch {
+    return dateKey;
+  }
+}
+
 export type DeliveryEstimate = {
   /** ISO dates, start and end of the window. */
   from: string;

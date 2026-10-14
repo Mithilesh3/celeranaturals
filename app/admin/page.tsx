@@ -9,11 +9,14 @@ import { useAuth } from "../components/auth-context";
 import { getFirebaseAuth } from "../components/firebase";
 import { formatINR } from "../../lib/money";
 import {
-  STATUS_LABEL, addressLines, formatIST, hasAddressDetails,
+  STATUS_LABEL, addressLines, formatIST, hasAddressDetails, normalizeAddress, validateAddress,
   type Order, type OrderAddress, type StoredOrder,
 } from "../../lib/orders";
 import { FULFILMENT_LABEL, eventActor, type FulfilmentStatus } from "../../lib/fulfilment";
-import { AddressFields, EMPTY_ADDRESS, addressIncomplete } from "../components/address-form";
+import {
+  ESTIMATE_DAY_OPTIONS, ISO_DATE, addDays, formatEstimateDate, istDateKey,
+} from "../../lib/delivery-estimate";
+import { AddressFields, EMPTY_ADDRESS } from "../components/address-form";
 import { Products } from "./products-admin";
 import { Customers } from "./customers-admin";
 
@@ -472,6 +475,14 @@ function OrderDetail({ orderId, onClose, onUpdated }: { orderId: string; onClose
   const [trackingUrl, setTrackingUrl] = useState("");
   const [confirming, setConfirming] = useState(false);
 
+  // Estimated delivery: a presentational promise, saved through its own
+  // endpoint that writes nothing else on the order.
+  const [estimateDays, setEstimateDays] = useState<string>("");
+  const [estimateDate, setEstimateDate] = useState("");
+  const [estimateBusy, setEstimateBusy] = useState(false);
+  const [estimateError, setEstimateError] = useState("");
+  const [estimateSaved, setEstimateSaved] = useState("");
+
   // Address correction is a separate, explicitly confirmed action.
   const [editingAddress, setEditingAddress] = useState(false);
   const [draft, setDraft] = useState<OrderAddress>(EMPTY_ADDRESS);
@@ -539,6 +550,42 @@ function OrderDetail({ orderId, onClose, onUpdated }: { orderId: string; onClose
   };
 
   const destructive = target === "cancelled";
+  const saveEstimate = async (clear = false) => {
+    if (estimateBusy || !order) return;
+    setEstimateBusy(true); setEstimateError(""); setEstimateSaved("");
+    try {
+      const response = await authFetch(`/api/admin/orders/${encodeURIComponent(orderId)}/estimate`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(clear
+          ? { clear: true }
+          : estimateDate ? { date: estimateDate } : { days: Number(estimateDays) }),
+      });
+      const data = await response.json();
+      if (!response.ok) { setEstimateError(data.error ?? "Could not save the estimate."); return; }
+      setEstimateSaved(clear ? "Estimate removed." : "Estimate saved.");
+      await load(); onUpdated();
+    } catch { setEstimateError("Network problem. Please try again."); }
+    finally { setEstimateBusy(false); }
+  };
+
+  // Previewed with the same helpers the server uses, so what the operator sees
+  // before saving is what gets stored.
+  const estimatePreview = order
+    ? estimateDate
+      ? (ISO_DATE.test(estimateDate) ? formatEstimateDate(estimateDate) : "")
+      : estimateDays
+        ? formatEstimateDate(addDays(istDateKey(order.createdAt), Number(estimateDays)))
+        : ""
+    : "";
+
+  // The same validation the server applies, surfaced inline so the operator can
+  // see exactly what is missing instead of facing a disabled button.
+  const addressBlockers = [
+    ...validateAddress(normalizeAddress(draft)),
+    ...(reason.trim() ? [] : ["A reason for the change is required."]),
+  ];
+
   const addressEditable = order
     ? !["shipped", "delivered", "cancelled"].includes(order.fulfilment)
     : false;
@@ -611,15 +658,26 @@ function OrderDetail({ orderId, onClose, onUpdated }: { orderId: string; onClose
                           <button className="store-button store-button-secondary" type="button" disabled={addressBusy} onClick={() => setConfirmAddress(false)}>Back</button>
                         </div>
                       ) : (
-                        <div className="admin-address__actions">
-                          <button
-                            className="store-button store-button-primary"
-                            type="button"
-                            disabled={addressBusy || addressIncomplete(draft) || !reason.trim()}
-                            onClick={() => setConfirmAddress(true)}
-                          >Review change…</button>
-                          <button className="store-button store-button-secondary" type="button" disabled={addressBusy} onClick={() => setEditingAddress(false)}>Cancel</button>
-                        </div>
+                        <>
+                          {/* Orders placed before `locality` existed have none,
+                              so the submit was sitting disabled with nothing on
+                              screen to say why — the editor looked broken.
+                              The blocking reasons are now listed. */}
+                          {addressBlockers.length > 0 && (
+                            <ul className="admin-problems" aria-live="polite">
+                              {addressBlockers.map((problem) => <li key={problem}>{problem}</li>)}
+                            </ul>
+                          )}
+                          <div className="admin-address__actions">
+                            <button
+                              className="store-button store-button-primary"
+                              type="button"
+                              disabled={addressBusy || addressBlockers.length > 0}
+                              onClick={() => setConfirmAddress(true)}
+                            >Review change…</button>
+                            <button className="store-button store-button-secondary" type="button" disabled={addressBusy} onClick={() => setEditingAddress(false)}>Cancel</button>
+                          </div>
+                        </>
                       )}
                     </>
                   ) : !hasAddressDetails(order.address) ? (
@@ -647,6 +705,70 @@ function OrderDetail({ orderId, onClose, onUpdated }: { orderId: string; onClose
                       ))}
                     </ol>
                   )}
+                </div>
+
+                <div className="admin-address admin-estimate">
+                  <div className="admin-address__head">
+                    <h4>Estimated delivery</h4>
+                    {order.estimatedDelivery && (
+                      <button type="button" className="panel__link panel__link--danger" disabled={estimateBusy}
+                        onClick={() => void saveEstimate(true)}>Remove</button>
+                    )}
+                  </div>
+
+                  <p className="admin-estimate__current">
+                    {order.estimatedDelivery
+                      ? <><strong>{formatEstimateDate(order.estimatedDelivery.date)}</strong>
+                          {order.estimatedDelivery.days ? <small> · {order.estimatedDelivery.days}-day estimate</small> : null}
+                          {order.estimatedDelivery.setByEmail && <small> · set by {order.estimatedDelivery.setByEmail}</small>}</>
+                      : <em>Not set yet — the customer is told it will be updated soon.</em>}
+                  </p>
+
+                  <div className="admin-estimate__row">
+                    <label className="checkout-field" htmlFor="admin-est-days">
+                      <span>Days from order date</span>
+                      <select
+                        id="admin-est-days"
+                        value={estimateDays}
+                        disabled={estimateBusy || Boolean(estimateDate)}
+                        onChange={(event) => { setEstimateDays(event.target.value); setEstimateError(""); setEstimateSaved(""); }}
+                      >
+                        <option value="">Choose…</option>
+                        {ESTIMATE_DAY_OPTIONS.map((days) => <option key={days} value={days}>{days} days</option>)}
+                      </select>
+                    </label>
+                    <label className="checkout-field" htmlFor="admin-est-date">
+                      <span>Or an exact date</span>
+                      <input
+                        id="admin-est-date"
+                        type="date"
+                        value={estimateDate}
+                        disabled={estimateBusy || Boolean(estimateDays)}
+                        onChange={(event) => { setEstimateDate(event.target.value); setEstimateError(""); setEstimateSaved(""); }}
+                      />
+                    </label>
+                  </div>
+
+                  {estimatePreview && (
+                    <p className="admin-estimate__preview">Will be saved as <strong>{estimatePreview}</strong></p>
+                  )}
+                  {estimateError && <p className="admin-state admin-state--error">{estimateError}</p>}
+                  {estimateSaved && <p className="admin-state admin-state--ok" role="status">{estimateSaved}</p>}
+
+                  <div className="admin-address__actions">
+                    <button
+                      className="store-button store-button-primary"
+                      type="button"
+                      disabled={estimateBusy || (!estimateDays && !estimateDate)}
+                      onClick={() => void saveEstimate(false)}
+                    >{estimateBusy ? "Saving…" : "Save estimate"}</button>
+                    {(estimateDays || estimateDate) && (
+                      <button className="store-button store-button-secondary" type="button" disabled={estimateBusy}
+                        onClick={() => { setEstimateDays(""); setEstimateDate(""); setEstimateError(""); setEstimateSaved(""); }}>Clear</button>
+                    )}
+                  </div>
+                  {/* Stated so nobody expects this to move the order along. */}
+                  <p className="admin-note">This is a delivery promise only. It does not change payment or delivery status.</p>
                 </div>
                 </section>
 
@@ -682,7 +804,7 @@ function OrderDetail({ orderId, onClose, onUpdated }: { orderId: string; onClose
             <div className="admin-drawer__foot">
                 <div className="admin-fulfil">
                   <div className="admin-fulfil__row">
-                    <h4>Fulfilment — currently {FULFILMENT_LABEL[order.fulfilment]}</h4>
+                    <h4>Delivery status — currently {FULFILMENT_LABEL[order.fulfilment]}</h4>
                     <label className="store-sr-only" htmlFor="admin-next-status">Next status</label>
                     <select id="admin-next-status" value={target} disabled={busy} onChange={(event) => { setTarget(event.target.value as FulfilmentStatus); setConfirming(false); }}>
                       <option value="">Choose next status…</option>

@@ -425,3 +425,15 @@ button.admin-table__row:focus-visible { outline: 3px solid rgba(8, 129, 102, 0.3
   .admin-drawer--order .admin-fulfil select { width: 100%; min-width: 0; flex: 1 1 100%; }
   .admin-drawer--order .admin-fulfil .store-button { width: 100%; }
 }
+
+/* ── Admin: estimated delivery ───────────────────────────────────────────── */
+.admin-estimate__current { margin: 0 0 0.5rem; color: var(--store-ink); font-size: 0.84rem; }
+.admin-estimate__current strong { color: var(--brand-ink); }
+.admin-estimate__current small { color: var(--store-muted); font-size: 0.72rem; }
+.admin-estimate__current em { color: var(--store-muted); font-size: 0.8rem; }
+.admin-estimate__row { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.5rem; }
+.admin-estimate__row .checkout-field { margin-bottom: 0.3rem; }
+.admin-estimate__row select, .admin-estimate__row input { width: 100%; min-height: 38px; padding: 0.35rem 0.55rem; border: 1px solid var(--border-hairline); border-radius: 9px; background: var(--surface-card); color: var(--store-ink); font: inherit; font-size: 0.82rem; }
+.admin-estimate__row select:disabled, .admin-estimate__row input:disabled { opacity: 0.55; }
+.admin-estimate__preview { margin: 0.35rem 0 0; padding: 0.45rem 0.6rem; border-radius: 9px; background: var(--surface-tinted); color: var(--store-ink); font-size: 0.8rem; }
+.admin-estimate__preview strong { color: var(--brand-ink); }
