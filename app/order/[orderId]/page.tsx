@@ -4,9 +4,10 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "../../components/auth-context";
 import { getFirebaseAuth } from "../../components/firebase";
-import { STATUS_LABEL, formatIST, type Order } from "../../../lib/orders";
+import { STATUS_LABEL, formatIST, type CustomerOrder } from "../../../lib/orders";
 import { OrderSummaryCard, maskPhone, type SummaryLine } from "../../components/order-summary";
-import { products } from "../../../scripts/data.js";
+import { DeliveryTracking, DeliveryAddressCard, type EstimateWindow } from "../../components/delivery-tracking";
+import { useCatalog } from "../../components/catalog-context";
 
 /**
  * Fetched through an authenticated API route rather than server-rendered.
@@ -18,7 +19,9 @@ import { products } from "../../../scripts/data.js";
 export default function OrderPage({ params }: { params: Promise<{ orderId: string }> }) {
   const { orderId } = use(params);
   const { user, initializing, openAuth } = useAuth();
-  const [order, setOrder] = useState<Order | null>(null);
+  const { byId } = useCatalog();
+  const [order, setOrder] = useState<CustomerOrder | null>(null);
+  const [estimate, setEstimate] = useState<EstimateWindow>(null);
   const [state, setState] = useState<"loading" | "ready" | "notfound" | "error">("loading");
 
   useEffect(() => {
@@ -36,7 +39,8 @@ export default function OrderPage({ params }: { params: Promise<{ orderId: strin
         if (response.status === 404) { setState("notfound"); return; }
         if (!response.ok) { setState("error"); return; }
         const data = await response.json();
-        setOrder(data.order as Order);
+        setOrder(data.order as CustomerOrder);
+        setEstimate((data.estimate ?? null) as EstimateWindow);
         setState("ready");
       } catch {
         if (!cancelled) setState("error");
@@ -71,7 +75,7 @@ export default function OrderPage({ params }: { params: Promise<{ orderId: strin
     name: item.name,
     qty: item.qty,
     lineTotal: item.lineTotal,
-    image: products.find((p) => p.id === item.id)?.image,
+    image: byId.get(item.id)?.image,
   }));
 
   return (
@@ -96,24 +100,32 @@ export default function OrderPage({ params }: { params: Promise<{ orderId: strin
             items={summaryLines}
             amounts={order.amounts}
             totalLabel={paid ? "Total paid" : "Total"}
+            couponLabel={order.coupon ? `${order.coupon.code} applied` : undefined}
           />
 
-          <section className="panel" aria-labelledby="order-delivery">
-            <h2 id="order-delivery" className="panel__heading">Delivery details</h2>
-            <address className="order-address">
-              <strong>{order.address.fullName}</strong><br />
-              {order.address.line1}<br />
-              {order.address.line2 && <>{order.address.line2}<br /></>}
-              {order.address.city}, {order.address.state} {order.address.pincode}
-            </address>
-            <dl className="detail-list">
-              <div><dt>Phone</dt><dd>{maskPhone(order.phone)}</dd></div>
-              <div><dt>Order date</dt><dd>{formatIST(order.createdAt)}</dd></div>
-              <div><dt>Payment method</dt><dd>{order.paymentMethod === "cod" ? "Cash on delivery" : "Razorpay"}</dd></div>
-              {paid && <div><dt>Estimated delivery</dt><dd>Within 5–7 business days</dd></div>}
-            </dl>
-          </section>
+          <div className="order-grid__stack">
+            <DeliveryAddressCard address={order.address} phone={maskPhone(order.phone)} edited={order.addressEdited} />
+
+            <section className="panel" aria-labelledby="order-meta">
+              <h2 id="order-meta" className="panel__heading">Order details</h2>
+              <dl className="detail-list">
+                <div><dt>Order date</dt><dd>{formatIST(order.createdAt)}</dd></div>
+                <div><dt>Items</dt><dd>{order.items.reduce((sum, item) => sum + item.qty, 0)}</dd></div>
+                <div><dt>Payment method</dt><dd>{order.paymentMethod === "cod" ? "Cash on delivery" : "Razorpay"}</dd></div>
+                {/* Payment and fulfilment are independent; both are shown. */}
+                <div><dt>Payment status</dt><dd><span className={`status-badge status-badge--${order.status}`}>{STATUS_LABEL[order.status]}</span></dd></div>
+              </dl>
+            </section>
+          </div>
         </div>
+
+        <DeliveryTracking
+          fulfilment={order.fulfilment}
+          timeline={order.timeline}
+          tracking={order.tracking}
+          estimate={estimate}
+          updatedAt={order.updatedAt}
+        />
 
         <div className="order-actions">
           <Link className="store-button store-button-primary" href="/shop">Continue shopping</Link>

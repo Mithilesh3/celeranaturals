@@ -11,6 +11,28 @@ import {
 } from "firebase/auth";
 import { getFirebaseAuth, isFirebaseConfigured } from "./firebase";
 
+/**
+ * Tells the server that this account just authenticated, so the sign-in can be
+ * counted against a persistent customer profile. The server re-derives the
+ * identity and the authentication time from the ID token, so this call asserts
+ * nothing — it only prompts the server to look.
+ *
+ * Deliberately fire-and-forget: sign-in bookkeeping must never delay or block
+ * a customer from using the site, so every failure is swallowed.
+ */
+async function recordSignIn(user: User) {
+  try {
+    const token = await user.getIdToken();
+    await fetch("/api/account/session", {
+      method: "POST",
+      cache: "no-store",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    // Offline, blocked, or the endpoint is unavailable; nothing to do.
+  }
+}
+
 /** Work the user was attempting when auth interrupted them. Resumed after sign-in. */
 export type PendingAction =
   | { kind: "addToCart"; productId: string; qty: number }
@@ -68,6 +90,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
       setUser(nextUser);
       setInitializing(false);
       if (!nextUser) setProfileChecked(false);
+      if (nextUser) void recordSignIn(nextUser);
     });
   }, [configured]);
 

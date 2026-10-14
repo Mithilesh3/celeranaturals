@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "../../../../lib/auth-server";
 import { adminDb, isAdminConfigured } from "../../../../lib/firebase-admin";
-import { ORDERS_COLLECTION, type Order } from "../../../../lib/orders";
+import { ORDERS_COLLECTION, toCustomerOrder, type StoredOrder } from "../../../../lib/orders";
+import { deliveryEstimate } from "../../../../lib/delivery-estimate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,9 +17,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ orde
   const snapshot = await adminDb().collection(ORDERS_COLLECTION).doc(orderId).get();
   if (!snapshot.exists) return NextResponse.json({ error: "Not found." }, { status: 404 });
 
-  const order = snapshot.data() as Order;
+  const stored = snapshot.data() as StoredOrder;
   // Another user's order is indistinguishable from one that does not exist.
-  if (order.userId !== user.uid) return NextResponse.json({ error: "Not found." }, { status: 404 });
+  if (stored.userId !== user.uid) return NextResponse.json({ error: "Not found." }, { status: 404 });
 
-  return NextResponse.json({ order });
+  const order = toCustomerOrder(stored);
+  // Null unless DELIVERY_ESTIMATE_DAYS is configured; the UI then says the
+  // estimate is unavailable rather than guessing one.
+  const estimate = deliveryEstimate({
+    createdAt: order.createdAt,
+    paid: order.status === "paid",
+    fulfilment: order.fulfilment,
+    shippedAt: order.tracking?.at ?? null,
+  });
+
+  return NextResponse.json({ order, estimate });
 }

@@ -54,4 +54,13 @@ export function adminDb(): Firestore {
   return getFirestore(adminApp());
 }
 
+/**
+ * The initialised Admin app itself, for SDKs that need it passed explicitly.
+ * This is a named app, so getStorage() with no argument would look for the
+ * default app and fail.
+ */
+export function ensureAdminApp(): App {
+  return adminApp();
+}
+
 export { getApp };

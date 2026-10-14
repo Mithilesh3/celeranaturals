@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { products } from "../../scripts/data.js";
+import { useCatalog } from "../components/catalog-context";
 import { ProductCard } from "../components/product-card";
 import { useStore } from "../components/store-context";
 
 export default function WishlistPage() {
   const { wishlist, ready } = useStore();
-  const saved = wishlist.map((id) => products.find((product) => product.id === id)).filter((product) => product !== undefined);
+  const { byId } = useCatalog();
+  // A saved id whose product is now unpublished or archived simply drops out.
+  const saved = wishlist.map((id) => byId.get(id)).filter((product) => product !== undefined);
   return (
     <main className="store-page site-redesign wishlist-page">
       <div className="store-container">

@@ -1,11 +1,18 @@
-import { products } from "../../scripts/data.js";
+import type { StoreProduct } from "../../lib/catalog";
 import type { CartRow } from "./store-context";
 
-export type Product = (typeof products)[number];
+/**
+ * Cart display helpers.
+ *
+ * The catalogue is passed in rather than imported, because it now comes from
+ * Firestore through CatalogProvider. These totals are for display only — the
+ * server recomputes every amount from the catalogue at checkout.
+ */
+export type Product = StoreProduct;
 export type CartDisplayRow = CartRow & { product: Product | undefined };
 
-export function resolveCartRows(cart: CartRow[]): CartDisplayRow[] {
-  return cart.map((row) => ({ ...row, product: products.find((product) => product.id === row.id) }));
+export function resolveCartRows(cart: CartRow[], byId: Map<string, Product>): CartDisplayRow[] {
+  return cart.map((row) => ({ ...row, product: byId.get(row.id) }));
 }
 
 export function calculateCartTotals(rows: CartDisplayRow[]) {

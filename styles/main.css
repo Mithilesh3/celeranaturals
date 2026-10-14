@@ -2588,6 +2588,22 @@ body[data-page="home"] .top-strip {
   height: 7.5%;
 }
 
+/* These are invisible hotspots sized as a percentage of the banner artwork, so
+   on a short mobile hero they collapsed to 10-12px tall. The pseudo-element
+   grows only the hit area, centred on the hotspot, so the artwork mapping and
+   the visual design are unchanged. */
+@media (pointer: coarse), (max-width: 1219px) {
+  .home-hero-shop-link::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: 0;
+    left: 0;
+    height: 44px;
+    transform: translateY(-50%);
+  }
+}
+
 .home-hero-shop-link:focus-visible {
   outline: 3px solid #ffffff;
   outline-offset: 3px;
@@ -2639,11 +2655,13 @@ body[data-page="home"] .top-strip {
   transform: translateX(-50%);
 }
 
+/* The visible dot stays 7px (drawn by ::before); the button itself is grown
+   to a 28px touch target around it. */
 .home-hero-dots button {
   appearance: none;
   display: grid;
-  width: 16px;
-  height: 16px;
+  width: 28px;
+  height: 28px;
   padding: 0;
   border: 0;
   border-radius: 50%;

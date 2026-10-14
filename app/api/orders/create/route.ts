@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
-import { products } from "../../../../scripts/data.js";
+import { getProductsByIds, stockShortfalls } from "../../../../lib/catalog-server";
+import { effectivePrice } from "../../../../lib/catalog";
 import { requireUser } from "../../../../lib/auth-server";
 import { adminDb, isAdminConfigured, missingAdminKeys } from "../../../../lib/firebase-admin";
 import { createRazorpayOrder, isRazorpayConfigured, razorpayKeyId, razorpaySecretIsPublic } from "../../../../lib/razorpay";
 import { buildAmounts, rupeesToPaise } from "../../../../lib/money";
-import { ORDERS_COLLECTION, validateAddress, type Order, type OrderAddress, type OrderItem } from "../../../../lib/orders";
+import { ORDERS_COLLECTION, normalizeAddress, validateAddress, type Order, type OrderAddress, type OrderItem, type StoredOrder } from "../../../../lib/orders";
+import { applyCoupon } from "../../../../lib/coupons";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -34,33 +36,72 @@ export async function POST(request: Request) {
   const user = await requireUser(request);
   if (!user) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
 
-  let body: { items?: CartLine[]; address?: Partial<OrderAddress>; expectedTotal?: number };
+  let body: { items?: CartLine[]; address?: Partial<OrderAddress>; expectedTotal?: number; couponCode?: string };
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Malformed request." }, { status: 400 }); }
 
   const lines = Array.isArray(body.items) ? body.items : [];
   if (!lines.length) return NextResponse.json({ error: "Your cart is empty." }, { status: 400 });
 
-  const addressProblems = validateAddress(body.address ?? {});
+  // Coerced to exactly the known keys before validation, so neither extra
+  // fields nor oversized strings can reach the stored snapshot.
+  const address = normalizeAddress(body.address);
+  const addressProblems = validateAddress(address);
   if (addressProblems.length) return NextResponse.json({ error: addressProblems.join(" ") }, { status: 400 });
 
-  // Prices come from server-side catalogue data only. Any amount supplied by
-  // the browser is treated as a claim to be checked, never as input.
-  const items: OrderItem[] = [];
+  // Quantities are validated before any catalogue lookup.
+  const wanted: Array<{ id: string; qty: number }> = [];
   for (const line of lines) {
-    const product = products.find((candidate) => candidate.id === line.id);
-    if (!product) return NextResponse.json({ error: "A product in your cart is no longer available." }, { status: 400 });
     const qty = Math.floor(Number(line.qty));
     if (!Number.isFinite(qty) || qty < 1 || qty > 50) {
       return NextResponse.json({ error: "Invalid quantity." }, { status: 400 });
     }
-    if (product.availability !== "in-stock") {
-      return NextResponse.json({ error: `${product.name} is out of stock.` }, { status: 400 });
+    if (typeof line.id !== "string" || !line.id) {
+      return NextResponse.json({ error: "A product in your cart is no longer available." }, { status: 400 });
     }
-    const unitPrice = rupeesToPaise(product.price);
-    items.push({ id: product.id, name: product.name, qty, unitPrice, lineTotal: unitPrice * qty });
+    wanted.push({ id: line.id, qty });
   }
 
-  const amounts = buildAmounts(items.reduce((sum, item) => sum + item.lineTotal, 0));
+  // Prices and stock come from the Firestore catalogue — the same records the
+  // admin panel writes — read live and uncached. Any price the browser sends is
+  // a claim to be checked, never an input.
+  let found;
+  try {
+    found = await getProductsByIds(wanted.map((line) => line.id));
+  } catch {
+    return NextResponse.json({ error: "Could not load the product catalogue. Please try again." }, { status: 503 });
+  }
+
+  const unavailable = stockShortfalls(wanted, found);
+  if (unavailable.length) return NextResponse.json({ error: unavailable[0] }, { status: 400 });
+
+  const items: OrderItem[] = [];
+  for (const line of wanted) {
+    const product = found.get(line.id)!;
+    const unitPrice = rupeesToPaise(effectivePrice(product));
+    // Name and SKU are snapshotted here; editing the product later cannot
+    // change what this order says was bought or what it cost.
+    items.push({
+      id: product.id,
+      name: product.name,
+      sku: product.sku || null,
+      qty: line.qty,
+      unitPrice,
+      lineTotal: unitPrice * line.qty,
+    });
+  }
+
+  const subtotal = items.reduce((sum, item) => sum + item.lineTotal, 0);
+
+  // The browser sends a code, never an amount. The discount is looked up and
+  // recomputed here, so a forged request cannot invent a reduction.
+  let applied: Order["coupon"] = null;
+  if (typeof body.couponCode === "string" && body.couponCode.trim()) {
+    const result = applyCoupon(body.couponCode, subtotal);
+    if (!result.ok) return NextResponse.json({ error: result.error }, { status: 400 });
+    applied = { code: result.coupon.code, label: result.coupon.label, discount: result.discount };
+  }
+
+  const amounts = buildAmounts(subtotal, applied?.discount ?? 0);
 
   // If the client disagrees about the price, stop rather than silently charging
   // a different amount than the customer was shown.
@@ -71,7 +112,6 @@ export async function POST(request: Request) {
   const db = adminDb();
   const ref = db.collection(ORDERS_COLLECTION).doc();
   const now = new Date().toISOString();
-  const address = body.address as OrderAddress;
 
   let razorpayOrderId: string;
   try {
@@ -81,17 +121,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Could not reach the payment provider. Please try again." }, { status: 502 });
   }
 
-  const order: Order = {
+  const order: StoredOrder = {
     orderId: ref.id,
     userId: user.uid,
     items,
     amounts,
+    coupon: applied,
     address,
     phone: user.phoneNumber ?? address.phone ?? "",
     status: "created",
     paymentMethod: "razorpay",
     razorpayOrderId,
     razorpayPaymentId: null,
+    // Fulfilment starts explicitly, independent of payment. Older orders have
+    // no such field and are read as "pending" by currentFulfilment.
+    fulfilment: "pending",
+    fulfilmentHistory: [],
     createdAt: now,
     updatedAt: now,
   };

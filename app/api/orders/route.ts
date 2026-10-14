@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "../../../lib/auth-server";
 import { adminDb, isAdminConfigured } from "../../../lib/firebase-admin";
-import { ORDERS_COLLECTION, type Order } from "../../../lib/orders";
+import { ORDERS_COLLECTION, toCustomerOrder, type StoredOrder } from "../../../lib/orders";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
     .get();
 
   const orders = snapshot.docs
-    .map((doc) => doc.data() as Order)
+    .map((doc) => toCustomerOrder(doc.data() as StoredOrder))
     .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 
   return NextResponse.json({ orders });

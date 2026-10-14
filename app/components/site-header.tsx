@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -13,6 +13,25 @@ export function SiteHeader() {
   const { cart, wishlist } = useStore();
   const pathname = usePathname();
   const cartCount = cart.reduce((sum, row) => sum + row.qty, 0);
+
+  // While the drawer covers the screen it owns the viewport: Escape closes it
+  // and the page behind must not scroll. The previous overflow value is
+  // restored so closing can never leave the page stuck.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === "Escape") setMenuOpen(false); };
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previous;
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menuOpen]);
+
+  // A route change while the drawer is open would otherwise leave it covering
+  // the new page.
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   return (
     <>
@@ -66,6 +85,9 @@ export function SiteHeader() {
       <div className={`scrim${menuOpen ? " show" : ""}`} onClick={() => setMenuOpen(false)} aria-hidden={!menuOpen} />
       <aside id="mobile-navigation" className={`mobile-menu${menuOpen ? " open" : ""}`} aria-hidden={!menuOpen}>
         <div className="mobile-menu-heading"><strong>Explore</strong><button className="mobile-menu-close" type="button" aria-label="Close navigation menu" onClick={() => setMenuOpen(false)}>×</button></div>
+        {/* Account first: signing in is the main unmet need of a first-time
+            visitor, and after login this becomes the account section. */}
+        <MobileAccountSection onNavigate={() => setMenuOpen(false)} />
         <nav aria-label="Mobile navigation">
           <Link href="/" onClick={() => setMenuOpen(false)}>Home</Link>
           <Link href="/shop" onClick={() => setMenuOpen(false)}>Products</Link>
@@ -81,7 +103,6 @@ export function SiteHeader() {
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v11m0 0 4-4m-4 4-4-4M5 16v4h14v-4" /></svg>
             <span>Get Brochure</span>
           </a>
-          <MobileAccountSection onNavigate={() => setMenuOpen(false)} />
         </nav>
       </aside>
     </>

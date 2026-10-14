@@ -3,7 +3,8 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { categories } from "../../scripts/data.js";
+import { imageSrc } from "../../lib/catalog";
+import { useCatalog } from "./catalog-context";
 import { calculateCartTotals, resolveCartRows, formatMoney, type CartDisplayRow } from "./cart-data";
 import { useStore } from "./store-context";
 
@@ -11,13 +12,14 @@ function CartItemImage({ row }: { row: CartDisplayRow }) {
   const [failed, setFailed] = useState(false);
   if (failed || !row.product) return <span className="cart-item-image cart-image-fallback" aria-label="Product image unavailable">Image unavailable</span>;
   return <Link className="cart-item-image" href={`/product/${row.product.slug}`}>
-    <Image src={`/${row.product.image}`} alt={row.product.name} width={1200} height={1200} sizes="132px" onError={() => setFailed(true)} />
+    <Image src={imageSrc(row.product.image)} unoptimized={row.product.image.startsWith("http")} alt={row.product.name} width={1200} height={1200} sizes="132px" onError={() => setFailed(true)} />
   </Link>;
 }
 
 export function CartOrderItems({ readOnly = false }: { readOnly?: boolean }) {
   const { cart, wishlist, setQuantity, removeFromCart, toggleWishlist } = useStore();
-  const rows = resolveCartRows(cart);
+  const { byId, categoryName } = useCatalog();
+  const rows = resolveCartRows(cart, byId);
 
   return <section className="cart-items" aria-label="Items in your cart">
     {rows.map((row) => {
@@ -28,7 +30,7 @@ export function CartOrderItems({ readOnly = false }: { readOnly?: boolean }) {
         {!readOnly && <div className="cart-item-actions"><button type="button" onClick={() => removeFromCart(id)}>Remove</button></div>}
       </article>;
 
-      const category = categories.find((item) => item.slug === product.category)?.name ?? product.category;
+      const category = categoryName(product.category) ?? product.category;
       const available = product.availability === "in-stock";
       return <article className="cart-item-card" key={id}>
         <CartItemImage row={row} />
@@ -58,7 +60,8 @@ export function CartOrderItems({ readOnly = false }: { readOnly?: boolean }) {
 
 export function CartOrderSummary({ compact = false }: { compact?: boolean }) {
   const { cart } = useStore();
-  const totals = calculateCartTotals(resolveCartRows(cart));
+  const { byId } = useCatalog();
+  const totals = calculateCartTotals(resolveCartRows(cart, byId));
   return <aside className={`cart-summary-card${compact ? " checkout-summary-card" : ""}`} aria-label="Cart summary">
     <p className="store-eyebrow">Summary</p><h2>Order summary</h2>
     <div className="cart-summary-line"><span>Subtotal at list price</span><strong>{formatMoney(totals.subtotal)}</strong></div>

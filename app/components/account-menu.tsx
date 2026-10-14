@@ -179,29 +179,48 @@ export function MobileAccountSection({ onNavigate }: { onNavigate: () => void })
 
   if (initializing) return null;
 
+  // A first-time visitor's main job in this drawer is to find how to sign in,
+  // so for a guest this is a full-width primary button at the top rather than
+  // a text link buried under the navigation.
   if (!user) {
     return (
-      <button
-        type="button"
-        className="mobile-menu-signin"
-        onClick={() => { onNavigate(); openAuth({ returnTo: pathname }); }}
-      >
-        Sign In
-      </button>
+      <div className="mobile-account">
+        <button
+          type="button"
+          className="mobile-menu-signin"
+          onClick={() => { onNavigate(); openAuth({ returnTo: pathname }); }}
+        >
+          <UserIcon />
+          <span>
+            <strong>Sign In / Create Account</strong>
+            <small>Track orders and save addresses</small>
+          </span>
+        </button>
+      </div>
     );
   }
 
   const displayName = user.displayName?.trim() || formatPhone(user.phoneNumber) || "My Account";
+  const secondary = user.displayName?.trim() ? formatPhone(user.phoneNumber) : "";
 
+  // Signed in, the same slot becomes the account section — expanded, not hidden
+  // behind a disclosure, so My Orders and the rest are one tap away.
   return (
-    <details className="mobile-category-group mobile-account-group">
-      <summary>My Account</summary>
-      <p className="mobile-account-identity">{displayName}</p>
-      {MENU_ITEMS.map(({ href, label, Icon }) => (
-        <Link key={href} href={href} onClick={onNavigate}>
-          <Icon />{label}
-        </Link>
-      ))}
+    <div className="mobile-account mobile-account--in">
+      <div className="mobile-account__who">
+        <span className="mobile-account__avatar" aria-hidden="true">{displayName.slice(0, 1).toUpperCase()}</span>
+        <span className="mobile-account__name">
+          <strong>{displayName}</strong>
+          {secondary && <small>{secondary}</small>}
+        </span>
+      </div>
+      <div className="mobile-account__links">
+        {MENU_ITEMS.map(({ href, label, Icon }) => (
+          <Link key={href} href={href} onClick={onNavigate}>
+            <Icon />{label}
+          </Link>
+        ))}
+      </div>
       <button
         type="button"
         className="mobile-account-signout"
@@ -209,6 +228,6 @@ export function MobileAccountSection({ onNavigate }: { onNavigate: () => void })
       >
         <LogOutIcon />Sign Out
       </button>
-    </details>
+    </div>
   );
 }

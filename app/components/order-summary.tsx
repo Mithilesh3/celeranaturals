@@ -21,11 +21,17 @@ export function OrderSummaryCard({
   amounts,
   totalLabel = "Total",
   heading = "Order summary",
+  couponLabel,
+  children,
 }: {
   items: SummaryLine[];
   amounts: Amounts;
   totalLabel?: string;
   heading?: string;
+  /** e.g. "WELCOME10 applied" — shown on the discount row. */
+  couponLabel?: string;
+  /** Slot beneath the items, used by checkout for the coupon field. */
+  children?: React.ReactNode;
 }) {
   return (
     <section className="summary-card" aria-labelledby="summary-heading">
@@ -49,8 +55,17 @@ export function OrderSummaryCard({
         ))}
       </ul>
 
+      {children}
+
       <dl className="summary-amounts">
         <div><dt>Subtotal</dt><dd>{formatINR(amounts.subtotal)}</dd></div>
+        {/* Orders created before coupons existed have no discount field. */}
+        {(amounts.discount ?? 0) > 0 && (
+          <div className="summary-amounts__discount">
+            <dt>{couponLabel ?? "Discount"}</dt>
+            <dd>&minus;{formatINR(amounts.discount)}</dd>
+          </div>
+        )}
         <div><dt>Shipping</dt><dd>{amounts.shipping === 0 ? "Free" : formatINR(amounts.shipping)}</dd></div>
         <div><dt>Tax</dt><dd>{formatINR(amounts.tax)}</dd></div>
       </dl>

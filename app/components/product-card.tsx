@@ -4,10 +4,11 @@ import { useState, type CSSProperties } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { categories, products } from "../../scripts/data.js";
 import { useStore } from "./store-context";
+import { useCatalog } from "./catalog-context";
+import { imageSrc, type StoreProduct } from "../../lib/catalog";
 
-type Product = (typeof products)[number];
+type Product = StoreProduct;
 const money = (amount: number) => "₹" + new Intl.NumberFormat("en-IN").format(amount);
 
 // The source photos are framed inconsistently: the two JPEGs run nearly edge to
@@ -28,10 +29,11 @@ const IMAGE_FRAME_SCALE: Record<string, number> = {
 
 export function ProductCard({ product, showFeedback = false, showDiscountBadge = false, showBuyNow = false, buyNowHref = "/cart", catalogCard = false }: { product: Product; showFeedback?: boolean; showDiscountBadge?: boolean; showBuyNow?: boolean; buyNowHref?: string; catalogCard?: boolean }) {
   const { wishlist, toggleWishlist, addToCart } = useStore();
+  const { categoryName } = useCatalog();
   const router = useRouter();
   const [message, setMessage] = useState("");
   const wished = wishlist.includes(product.id);
-  const category = categories.find((item) => item.slug === product.category)?.name;
+  const category = categoryName(product.category);
   const available = product.availability === "in-stock";
   const discounted = product.originalPrice > product.price;
   const discountPercent = discounted ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100) : 0;
@@ -41,7 +43,10 @@ export function ProductCard({ product, showFeedback = false, showDiscountBadge =
     <article className={`commerce-product-card${catalogCard ? " shop-product-card" : ""}`} data-product-slug={product.slug}>
       <div className="commerce-product-media" style={{ "--product-image-scale": IMAGE_FRAME_SCALE[product.image] ?? 1 } as CSSProperties}>
         <Link className="commerce-product-image-link" href={`/product/${product.slug}`} aria-label={`View ${product.name}`}>
-          <Image src={`/${product.image}`} alt={product.name} width={1200} height={1200} sizes="(max-width: 560px) 46vw, (max-width: 1100px) 31vw, 280px" loading="lazy" />
+          {/* Remote images are served unoptimised: the optimiser would need a
+              configured remotePatterns allowlist, and the catalogue already
+              restricts which hosts may be referenced at all. */}
+          <Image src={imageSrc(product.image)} alt={product.name} width={1200} height={1200} sizes="(max-width: 560px) 46vw, (max-width: 1100px) 31vw, 280px" loading="lazy" unoptimized={product.image.startsWith("http")} />
         </Link>
         {badge && <span className="commerce-product-badge">{badge}</span>}
         <button
@@ -59,10 +64,14 @@ export function ProductCard({ product, showFeedback = false, showDiscountBadge =
         <p className="commerce-product-category">{category}</p>
         <h2 className={catalogCard ? "shop-product-card__title" : "commerce-product-title"}><Link href={`/product/${product.slug}`}>{product.name}</Link></h2>
         <p className="commerce-product-description">{product.shortDescription}</p>
-        <div className="commerce-product-rating" aria-label={`${product.rating} out of 5 stars`}>
-          <span aria-hidden="true">{"★".repeat(Math.round(product.rating))}</span>
-          <span>{product.rating.toFixed(1)} ({product.reviewCount})</span>
-        </div>
+        {/* Only rendered when real review data exists. A product added through
+            the admin panel has none, and none is invented for it. */}
+        {product.rating !== null && (
+          <div className="commerce-product-rating" aria-label={`${product.rating} out of 5 stars`}>
+            <span aria-hidden="true">{"★".repeat(Math.round(product.rating))}</span>
+            <span>{product.rating.toFixed(1)} ({product.reviewCount})</span>
+          </div>
+        )}
         <div className="commerce-product-price">
           <strong>{money(product.price)}</strong>
           {discounted && <del>{money(product.originalPrice)}</del>}

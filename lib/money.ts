@@ -15,11 +15,21 @@ export const TAX_PAISE: Paise = 0;
 
 export type Amounts = {
   subtotal: Paise;
+  /** Always a positive figure; it is subtracted from the subtotal. */
+  discount: Paise;
   shipping: Paise;
   tax: Paise;
   total: Paise;
 };
 
-export function buildAmounts(subtotal: Paise): Amounts {
-  return { subtotal, shipping: SHIPPING_PAISE, tax: TAX_PAISE, total: subtotal + SHIPPING_PAISE + TAX_PAISE };
+export function buildAmounts(subtotal: Paise, discount: Paise = 0): Amounts {
+  // Never let a discount push the payable below zero.
+  const applied = Math.max(0, Math.min(discount, subtotal));
+  return {
+    subtotal,
+    discount: applied,
+    shipping: SHIPPING_PAISE,
+    tax: TAX_PAISE,
+    total: subtotal - applied + SHIPPING_PAISE + TAX_PAISE,
+  };
 }

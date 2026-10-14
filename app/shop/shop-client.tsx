@@ -2,14 +2,17 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { categories, products } from "../../scripts/data.js";
 import { ProductCard } from "../components/product-card";
+import { useCatalog } from "../components/catalog-context";
 
 const MAX_PRICE = 2000;
 const PAGE_SIZE = 6;
 const money = (amount: number) => new Intl.NumberFormat("en-IN").format(amount);
 
 export function ShopClient({ initialCategory, initialSearch }: { initialCategory: string; initialSearch: string }) {
+  // Published products only; the provider is fed from the same Firestore
+  // repository the admin panel writes to.
+  const { products, categories } = useCatalog();
   const validCategory = categories.some((item) => item.slug === initialCategory) ? initialCategory : "all";
   const [category, setCategory] = useState(validCategory);
   const [availability, setAvailability] = useState("all");
@@ -31,9 +34,9 @@ export function ShopClient({ initialCategory, initialSearch }: { initialCategory
     });
     if (sort === "price-asc") list.sort((a, b) => a.price - b.price);
     if (sort === "price-desc") list.sort((a, b) => b.price - a.price);
-    if (sort === "rating") list.sort((a, b) => b.rating - a.rating);
+    if (sort === "rating") list.sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0));
     return list;
-  }, [availability, category, maxPrice, minPrice, query, sort]);
+  }, [availability, category, maxPrice, minPrice, products, query, sort]);
 
   const pageCount = Math.max(1, Math.ceil(filteredProducts.length / PAGE_SIZE));
   const currentPage = Math.min(page, pageCount);

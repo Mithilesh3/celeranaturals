@@ -4,11 +4,12 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { categories, products } from "../../../scripts/data.js";
+import { useCatalog } from "../../components/catalog-context";
+import type { StoreProduct } from "../../../lib/catalog";
 import { ProductCard } from "../../components/product-card";
 import { useStore } from "../../components/store-context";
 
-type Product = (typeof products)[number];
+type Product = StoreProduct;
 const money = (amount: number) => "₹" + new Intl.NumberFormat("en-IN").format(amount);
 
 // Some catalog entries still point at remote gallery images. Those are left as
@@ -25,7 +26,8 @@ export function ProductDetail({ product }: { product: Product }) {
   const [message, setMessage] = useState("");
   const { addToCart, wishlist, toggleWishlist } = useStore();
   const router = useRouter();
-  const category = categories.find((item) => item.slug === product.category)?.name;
+  const { products, categoryName } = useCatalog();
+  const category = categoryName(product.category);
   const related = products.filter((item) => item.category === product.category && item.id !== product.id).slice(0, 4);
   const images = product.images?.length ? product.images : [product.image];
   const tabs = ["description", "ingredients", "benefits", "how", "reviews"];
@@ -35,7 +37,10 @@ export function ProductDetail({ product }: { product: Product }) {
     ingredients: <ul>{product.ingredients.map((item) => <li key={item}>{item}</li>)}</ul>,
     benefits: <ul>{product.benefits.map((item) => <li key={item}>{item}</li>)}</ul>,
     how: <p>Take as directed on the product label. Use with adequate water and maintain consistent daily intake.</p>,
-    reviews: <p>Customer rating: {product.rating}/5 from {product.reviewCount} reviews.</p>,
+    // No review data is fabricated for products that have none.
+    reviews: product.rating === null
+      ? <p>No customer reviews yet for this product.</p>
+      : <p>Customer rating: {product.rating}/5 from {product.reviewCount} reviews.</p>,
   };
   const wished = wishlist.includes(product.id);
 
@@ -50,7 +55,7 @@ export function ProductDetail({ product }: { product: Product }) {
           </div>
           <section className="product-purchase-panel" aria-labelledby="product-title">
             <p className="store-eyebrow">{category}</p><h1 id="product-title">{product.name}</h1>
-            <div className="product-rating-row"><span className="commerce-product-rating" aria-label={`${product.rating} out of 5 stars`}><span aria-hidden="true">{"★".repeat(Math.round(product.rating))}</span> {product.rating.toFixed(1)}</span><span>{product.reviewCount} customer reviews</span></div>
+            {product.rating !== null && <div className="product-rating-row"><span className="commerce-product-rating" aria-label={`${product.rating} out of 5 stars`}><span aria-hidden="true">{"★".repeat(Math.round(product.rating))}</span> {product.rating.toFixed(1)}</span><span>{product.reviewCount} customer reviews</span></div>}
             <div className="product-detail-price"><strong>{money(product.price)}</strong>{product.originalPrice > product.price && <del>{money(product.originalPrice)}</del>}{product.badge && <span>{product.badge}</span>}</div>
             <p className="product-detail-summary">{product.shortDescription}</p>
             <p className={`product-availability ${product.availability === "in-stock" ? "is-available" : "is-unavailable"}`}><span aria-hidden="true">●</span>{product.availability === "in-stock" ? "In stock" : "Currently unavailable"}</p>

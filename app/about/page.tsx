@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { categories } from "../../scripts/data.js";
+import { getActiveCategories } from "../../lib/catalog-server";
 
 export const metadata: Metadata = { title: "About Us | Celeranaturals", description: "Learn about Celeranaturals and Celera Healthcare." };
 
@@ -12,47 +12,33 @@ export const metadata: Metadata = { title: "About Us | Celeranaturals", descript
  * endorsement, accreditation or product approval, so the labels stay literal.
  * Do not edit these values without re-checking that source.
  */
-const COMPANY = { name: "Celera Healthcare Private Limited", cin: "U74120UP2014PTC065750" };
-
 /**
- * Grouped by what each number actually is, so the panel reads as four
- * meaningful categories rather than a flat table of codes.
+ * Mirrors the official company credentials table at
+ * https://celerahealthcare.com/certificates.php, field for field, in the same
+ * order and with the same labels. Values are transcribed verbatim — including
+ * the registered pincode 226020, which is what that page states. Do not edit
+ * without re-checking the source.
  */
-const CREDENTIAL_GROUPS = [
+const COMPANY_DETAILS: Array<{ label: string; value?: string; lines?: string[]; code?: boolean }> = [
+  { label: "Company Name", value: "Celera Healthcare Private Limited" },
+  { label: "Company Address", value: "C-51 Kamla Nehru Nagar, Kalyanpur East Lucknow UP India Pin- 226020" },
   {
-    title: "Drug licences",
-    icon: "shield",
-    items: [
-      { label: "Form 20B", value: "UP3220B000486" },
-      { label: "Form 21B", value: "UP3221B000483" },
+    label: "Contact Details",
+    lines: [
+      "Call & Whatsapp: +91 9811351137",
+      "Email: info@celerahealthcare.com",
+      "Website: www.celerahealthcare.com",
     ],
   },
-  {
-    title: "Food safety",
-    icon: "leaf",
-    items: [{ label: "FSSAI registration", value: "12719066001186" }],
-  },
-  {
-    title: "Tax & trade",
-    icon: "receipt",
-    items: [
-      { label: "GST registration", value: "09AAFCC7950D1ZM" },
-      { label: "Importer Exporter Code", value: "AAFCC7950D" },
-    ],
-  },
-  {
-    title: "MSME",
-    icon: "badge",
-    items: [{ label: "Udyam registration", value: "UDYAM-UP-50-0058573" }],
-  },
-] as const;
-
-const GROUP_ICON: Record<string, React.ReactNode> = {
-  shield: <><path d="M12 3 20 6v6c0 5-3.4 8-8 10-4.6-2-8-5-8-10V6l8-3Z" /><path d="m8.5 12 2.2 2.2 4.8-5" /></>,
-  leaf: <><path d="M20.7 4.3C12.2 3.8 5.5 7 4.1 13.1c-.8 3.7 2 7 5.3 6.3 6.1-1.4 9.3-8.1 8.9-15.1Z" /><path d="M3.2 21c3.4-5.5 7.5-9.5 13.6-13" /></>,
-  receipt: <><path d="M5 3v18l2.5-1.6L10 21l2-1.6L14 21l2.5-1.6L19 21V3Z" /><path d="M8.5 8h7M8.5 12h7M8.5 16h4" /></>,
-  badge: <><circle cx="12" cy="9" r="5" /><path d="m8.5 13.5-1 7.5 4.5-2.5 4.5 2.5-1-7.5" /></>,
-};
+  { label: "Importer Exporter Code", value: "AAFCC7950D", code: true },
+  { label: "GST Number", value: "09AAFCC7950D1ZM", code: true },
+  { label: "Udyam Reg No.", value: "UDYAM-UP-50-0058573", code: true },
+  { label: "Drug Licence No. (20B)", value: "UP3220B000486", code: true },
+  { label: "Drug Licence No. (21B)", value: "UP3221B000483", code: true },
+  { label: "FSSAI No.", value: "12719066001186", code: true },
+  { label: "CIN", value: "U74120UP2014PTC065750", code: true },
+  { label: "Main Products", value: "Tablet, Capsule, Softgel Capsule, Powder, Syrup, Dry Syrup, Injection, Cream" },
+];
 
 const values = [
   { title: "Clear product information", copy: "Straightforward details help customers compare products before choosing." },
@@ -60,7 +46,9 @@ const values = [
   { title: "Accessible support", copy: "Reach our team directly with product, order and delivery questions." },
 ];
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const categories = await getActiveCategories().catch(() => []);
+
   return (
     <main className="store-page site-redesign about-page">
       <div className="store-container">
@@ -81,42 +69,20 @@ export default function AboutPage() {
             <p>Company credentials and registrations supporting our commitment to quality and compliance.</p>
           </div>
 
-          <div className="credential-identity">
-            <span className="credential-identity__mark" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 3 20 6v6c0 5-3.4 8-8 10-4.6-2-8-5-8-10V6l8-3Z" /><path d="m8.5 12 2.2 2.2 4.8-5" />
-              </svg>
-            </span>
-            <div>
-              <p className="credential-identity__label">Registered entity</p>
-              <p className="credential-identity__name">{COMPANY.name}</p>
-            </div>
-            <p className="credential-identity__cin">
-              <span>CIN</span>
-              <strong>{COMPANY.cin}</strong>
-            </p>
-          </div>
-
-          <div className="credential-groups">
-            {CREDENTIAL_GROUPS.map((group) => (
-              <section className="credential-group" key={group.title}>
-                <h3>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false">
-                    {GROUP_ICON[group.icon]}
-                  </svg>
-                  {group.title}
-                </h3>
-                <dl>
-                  {group.items.map((item) => (
-                    <div key={item.label}>
-                      <dt>{item.label}</dt>
-                      <dd>{item.value}</dd>
-                    </div>
-                  ))}
-                </dl>
-              </section>
+          <dl className="credential-table">
+            {COMPANY_DETAILS.map((row) => (
+              <div className="credential-row" key={row.label}>
+                <dt>{row.label}</dt>
+                <dd>
+                  {row.lines
+                    ? row.lines.map((line) => <span className="credential-line" key={line}>{line}</span>)
+                    : row.code
+                      ? <span className="credential-code">{row.value}</span>
+                      : row.value}
+                </dd>
+              </div>
             ))}
-          </div>
+          </dl>
 
           <p className="credential-note">
             These are statutory registrations and licences held by Celera Healthcare Private Limited.

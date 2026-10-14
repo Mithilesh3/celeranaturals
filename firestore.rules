@@ -18,6 +18,29 @@ service cloud.firestore {
       allow create, update, delete: if false;
     }
 
+    // The product catalogue. Browsers never read it directly: the storefront
+    // is server-rendered through lib/catalog-server.ts, which uses the Admin
+    // SDK. Denying client access means drafts and archived products cannot be
+    // enumerated from a browser even though they live in the same collection
+    // as published ones. All writes go through the admin-authorised API.
+    match /catalogProducts/{productId} {
+      allow read, list, create, update, delete: if false;
+    }
+    match /catalogCategories/{categoryId} {
+      allow read, list, create, update, delete: if false;
+    }
+
+    // Saved delivery addresses live at users/{uid}/addresses/{id}.
+    //
+    // Denied to browsers outright rather than scoped to the owner: every read
+    // and write already goes through /api/account/addresses, which derives the
+    // uid from a verified ID token. Keeping the client path closed means there
+    // is exactly one way in, and it is the one that validates input. This is
+    // strictly more restrictive than the existing rules, not a relaxation.
+    match /users/{userId}/{document=**} {
+      allow read, list, create, update, delete: if false;
+    }
+
     match /newsletterSubscribers/{subscriberId} {
       // Subscriber addresses are never exposed to a browser: no read, no list,
       // no write. Records are created solely by /api/newsletter/subscribe via

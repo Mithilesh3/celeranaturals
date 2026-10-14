@@ -6,9 +6,12 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "../components/auth-context";
 import { useStore } from "../components/store-context";
 import { getFirebaseAuth } from "../components/firebase";
-import { STATUS_LABEL, formatIST, type Order } from "../../lib/orders";
+import { STATUS_LABEL, formatIST, type CustomerOrder } from "../../lib/orders";
+import { FULFILMENT_LABEL } from "../../lib/fulfilment";
 import { formatINR } from "../../lib/money";
-import { products } from "../../scripts/data.js";
+import { SavedAddresses } from "../components/saved-addresses";
+import { ProfileCard } from "../components/profile-card";
+import { useCatalog } from "../components/catalog-context";
 
 /** Lucide "log-out", matching the inline SVG convention used elsewhere. */
 const LogOutIcon = () => (
@@ -44,7 +47,7 @@ const HASH_TO_TAB: Record<string, TabId> = {
 
 /** One fetch shared by the Overview and Orders tabs. */
 function useOrders(enabled: boolean) {
-  const [orders, setOrders] = useState<Order[] | null>(null);
+  const [orders, setOrders] = useState<CustomerOrder[] | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -60,7 +63,7 @@ function useOrders(enabled: boolean) {
         if (cancelled) return;
         if (!response.ok) { setFailed(true); setOrders([]); return; }
         const data = await response.json();
-        setOrders(data.orders as Order[]);
+        setOrders(data.orders as CustomerOrder[]);
       } catch {
         if (!cancelled) { setFailed(true); setOrders([]); }
       }
@@ -71,7 +74,7 @@ function useOrders(enabled: boolean) {
   return { orders, failed };
 }
 
-function OrderRows({ orders }: { orders: Order[] }) {
+function OrderRows({ orders }: { orders: CustomerOrder[] }) {
   return (
     <ul className="order-list">
       {orders.map((order) => (
@@ -79,10 +82,15 @@ function OrderRows({ orders }: { orders: Order[] }) {
           <Link href={`/order/${order.orderId}`}>
             <span className="order-list__top">
               <span className="order-list__id">{order.orderId}</span>
-              <span className={`status-badge status-badge--${order.status}`}>{STATUS_LABEL[order.status]}</span>
+              {/* Payment and delivery are separate facts and are badged separately. */}
+              <span className="order-list__badges">
+                <span className={`status-badge status-badge--${order.status}`}>{STATUS_LABEL[order.status]}</span>
+                <span className={`track-pill track-pill--${order.fulfilment}`}>{FULFILMENT_LABEL[order.fulfilment]}</span>
+              </span>
             </span>
             <span className="order-list__meta">
               {formatIST(order.createdAt)} · {order.items.reduce((sum, item) => sum + item.qty, 0)} item(s)
+              {order.tracking?.number && <> · {order.tracking.courier}</>}
             </span>
             <span className="order-list__total">{formatINR(order.amounts.total)}</span>
           </Link>
@@ -106,6 +114,7 @@ function NoOrders() {
 export default function AccountPage() {
   const { user, initializing, configured, openAuth, signOut } = useAuth();
   const { wishlist, ready: storeReady } = useStore();
+  const { byId } = useCatalog();
   const router = useRouter();
   const [tab, setTab] = useState<TabId>("overview");
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
@@ -128,8 +137,8 @@ export default function AccountPage() {
   }, [syncFromHash]);
 
   const savedProducts = useMemo(
-    () => wishlist.map((id) => products.find((p) => p.id === id)).filter((p) => p !== undefined),
-    [wishlist],
+    () => wishlist.map((id) => byId.get(id)).filter((p) => p !== undefined),
+    [wishlist, byId],
   );
 
   const displayName = user?.displayName?.trim() || formatPhone(user?.phoneNumber) || "there";
@@ -167,18 +176,7 @@ export default function AccountPage() {
     </div>
   );
 
-  const profileCard = (
-    <section className="panel" aria-labelledby="acc-profile">
-      <h2 id="acc-profile" className="panel__heading">Profile</h2>
-      <dl className="detail-list">
-        <div><dt>Name</dt><dd>{user?.displayName || "Not set"}</dd></div>
-        <div><dt>Mobile number</dt><dd>{formatPhone(user?.phoneNumber)}</dd></div>
-      </dl>
-      <button className="store-button store-button-secondary panel__action" type="button" onClick={() => openAuth({ returnTo: "/account" })}>
-        Edit name
-      </button>
-    </section>
-  );
+  const profileCard = <ProfileCard enabled={Boolean(user)} />;
 
   const wishlistCard = (
     <section className="panel" aria-labelledby="acc-wishlist">
@@ -199,14 +197,7 @@ export default function AccountPage() {
     </section>
   );
 
-  const addressesCard = (
-    <section className="panel" aria-labelledby="acc-addresses">
-      <h2 id="acc-addresses" className="panel__heading">Saved addresses</h2>
-      <p className="panel__hint">
-        Saved addresses aren&rsquo;t available yet. You enter your delivery address at checkout each time, and it is stored with that order only.
-      </p>
-    </section>
-  );
+  const addressesCard = <SavedAddresses enabled={Boolean(user)} />;
 
   return (
     <main className="store-page site-redesign account-page">

@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
-import { categories, faq, products, testimonials } from "../scripts/data.js";
+import { faq, testimonials } from "../scripts/data.js";
+import { getActiveCategories, getPublishedProducts } from "../lib/catalog-server";
 import { HomeHero } from "./components/home-hero";
 import { NewsletterForm } from "./components/newsletter-form";
 import { ProductCard } from "./components/product-card";
@@ -12,11 +13,12 @@ const assurances = [
   { title: "GMP Certified", copy: "Manufactured in GMP certified facilities", icon: <><path d="M12 4h8M14 4v8L8 25a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3l-6-13V4M11 22h10" /></> },
 ];
 
+/**
+ * The curated homepage line-up, by catalogue id. Any id that is unpublished,
+ * archived or deleted simply drops out; the section then backfills from the
+ * published catalogue so it never renders empty or links to a dead product.
+ */
 const featuredProductIds = ["p4", "p2", "p5", "p6"];
-const featuredProducts = featuredProductIds.flatMap((id) => {
-  const product = products.find((item) => item.id === id);
-  return product ? [product] : [];
-});
 
 const leadershipTeam = [
   {
@@ -46,7 +48,18 @@ const categoryCutouts: Record<string, string> = {
   protein: "/assets/images/category-cutouts/protein.png",
 };
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [allProducts, categories] = await Promise.all([
+    getPublishedProducts().catch(() => []),
+    getActiveCategories().catch(() => []),
+  ]);
+  const curated = featuredProductIds.flatMap((id) => {
+    const product = allProducts.find((item) => item.id === id);
+    return product ? [product] : [];
+  });
+  const backfill = allProducts.filter((product) => !curated.includes(product));
+  const featuredProducts = [...curated, ...backfill].slice(0, 4);
+
   return (
     <main>
       <HomeHero />

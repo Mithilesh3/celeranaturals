@@ -14,6 +14,21 @@
   --shadow-card-hover: 0 4px 14px rgba(20, 83, 45, 0.08);
   /* Height of the tinted band that fades into the canvas at the top of a page. */
   --hero-band: 400px;
+
+  /* These were previously scoped to body:has(main.site-redesign), which meant
+     they were undefined on the homepage. Anything global — the auth modal, the
+     header, shared buttons — then rendered with unresolved colours (a primary
+     button became white-on-white). They belong at the root. */
+  --store-ink: #18352b;
+  /* Darkened 6 points from #68776f: the old value fell to 4.22:1 on
+     --surface-tinted, below AA. This clears 4.5:1 on all three surfaces. */
+  --store-muted: #627169;
+  --store-green: #145b3a;
+  --store-green-dark: #0d432c;
+  --store-green-soft: var(--surface-tinted);
+  --store-line: var(--border-hairline);
+  --store-surface: var(--surface-card);
+  --store-bg: var(--surface-canvas);
 }
 
 /* Covers the over-scroll area too, so no legacy tint shows past the body box. */
@@ -43,16 +58,8 @@ body[data-page="home"] main > .section-beige {
 
 /* Route-scoped refresh for non-home pages. The homepage and its carousel do not match these selectors. */
 body:has(main.site-redesign) {
-  --store-ink: #18352b;
-  /* Darkened 6 points from #68776f: the old value fell to 4.22:1 on
-     --surface-tinted, below AA. This clears 4.5:1 on all three surfaces. */
-  --store-muted: #627169;
-  --store-green: #145b3a;
-  --store-green-dark: #0d432c;
-  --store-green-soft: var(--surface-tinted);
-  --store-line: var(--border-hairline);
-  --store-surface: var(--surface-card);
-  --store-bg: var(--surface-canvas);
+  /* Tokens now live at :root so they resolve on every route, including the
+     homepage. Only the route-specific text colour stays here. */
   color: var(--store-ink);
 }
 
@@ -296,12 +303,32 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
 .account-menu__item--signout:hover { background: #f9eded; color: #843f3f; }
 .account-menu__item--signout:disabled { opacity: 0.6; cursor: not-allowed; }
 
-/* Mobile account accordion inside the existing hamburger menu */
-.mobile-account-identity { margin: 0.1rem 0 0.3rem; color: var(--store-muted); font-size: 0.78rem; }
-.mobile-account-group a { display: flex; align-items: center; gap: 0.55rem; }
-.mobile-account-group a svg { width: 16px; height: 16px; flex: 0 0 16px; color: var(--store-green); }
-.mobile-account-signout { display: flex; width: 100%; align-items: center; gap: 0.55rem; padding: 0.85rem 0.2rem; border: 0; background: none; color: #9a4c4c; font: inherit; font-weight: 650; text-align: left; cursor: pointer; }
-.mobile-account-signout svg { width: 16px; height: 16px; flex: 0 0 16px; }
+/* Account block at the top of the hamburger drawer. For a guest this is the
+   primary call to action; once signed in the same slot becomes the account
+   section, driven by Firebase auth state rather than any local flag. */
+/* The drawer already supplies 1.5rem of horizontal padding; adding more here
+   was shrinking the button to ~73% of the available width. Vertical only. */
+.mobile-account { padding: 0.2rem 0 0.9rem; }
+.mobile-account--in { padding-bottom: 0.7rem; border-bottom: 1px solid var(--border-hairline); }
+
+.mobile-menu-signin { display: flex; width: 100%; min-height: 52px; align-items: center; gap: 0.65rem; padding: 0.7rem 0.9rem; border: 0; border-radius: 12px; background: var(--store-green); color: #fff; font: inherit; text-align: left; cursor: pointer; box-shadow: 0 6px 16px rgba(20, 91, 58, 0.22); transition: background-color 150ms ease; }
+.mobile-menu-signin:hover { background: var(--store-green-dark); }
+.mobile-menu-signin:focus-visible { outline: 3px solid rgba(20, 91, 58, 0.45); outline-offset: 2px; }
+.mobile-menu-signin svg { width: 20px; height: 20px; flex: 0 0 20px; }
+.mobile-menu-signin span { display: grid; gap: 0.08rem; min-width: 0; }
+.mobile-menu-signin strong { font-size: 0.92rem; font-weight: 750; }
+.mobile-menu-signin small { color: rgba(255, 255, 255, 0.82); font-size: 0.72rem; }
+
+.mobile-account__who { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.6rem; }
+.mobile-account__avatar { display: grid; width: 40px; height: 40px; flex: 0 0 40px; place-items: center; border-radius: 50%; background: var(--surface-tinted); color: var(--store-green); font-size: 1rem; font-weight: 800; }
+.mobile-account__name { display: grid; gap: 0.05rem; min-width: 0; }
+.mobile-account__name strong { color: var(--brand-ink); font-size: 0.92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mobile-account__name small { color: var(--store-muted); font-size: 0.75rem; }
+.mobile-account__links { display: grid; }
+.mobile-account__links a { display: flex; min-height: 44px; align-items: center; gap: 0.6rem; padding: 0.3rem 0; color: var(--store-ink); font-size: 0.9rem; text-decoration: none; }
+.mobile-account__links a svg { width: 17px; height: 17px; flex: 0 0 17px; color: var(--store-green); }
+.mobile-account-signout { display: flex; width: 100%; min-height: 44px; align-items: center; gap: 0.6rem; padding: 0.3rem 0; border: 0; background: none; color: #9a4c4c; font: inherit; font-size: 0.9rem; font-weight: 650; text-align: left; cursor: pointer; }
+.mobile-account-signout svg { width: 17px; height: 17px; flex: 0 0 17px; }
 
 .icon-nav {
   flex: 0 0 auto;
@@ -400,7 +427,13 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
   .icon-nav { gap: 0; }
 }
 
-@media (max-width: 960px) {
+/* Header: the desktop bar (nav links + Get Brochure + four icon buttons) needs
+   about 1220px before it fits. Measured in Chrome, the 1000-1219px band pushed
+   .icon-nav to a fixed 1110px right edge, overflowing the document by up to
+   86px at 1024px — concealed until now by body { overflow-x: hidden }.
+   The mobile header is used across that band instead. Nothing is removed: the
+   same links live in the drawer that the hamburger opens. */
+@media (max-width: 1219px) {
   .nav-wrap { min-height: 72px; height: 72px; }
   .nav-links, .brochure-link, .icon-nav .desktop-only { display: none; }
   .brand { flex: 0 1 auto; }
@@ -412,6 +445,17 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
   .icon-nav { display: flex; flex: 0 0 auto; gap: 0.2rem; }
   .icon-nav .header-search-link { display: none; }
   .icon-nav .mobile-toggle { display: grid; }
+  /* The search pill's input had no height of its own, leaving an 18px tap
+     target inside a 42px control. */
+  .mobile-header-search input { align-self: stretch; height: 100%; }
+}
+
+/* The hamburger was rendering at every width — .icon-btn{display:grid} was
+   winning over .mobile-toggle{display:none} — so the desktop bar carried an
+   extra 38px button it never needed. Scoped higher than .icon-btn so the
+   intent cannot be lost again. */
+@media (min-width: 1220px) {
+  .icon-nav .mobile-toggle { display: none; }
 }
 
 @media (max-width: 600px) {
@@ -775,18 +819,23 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
 .catalog-filters { position: sticky; top: 108px; display: grid; gap: 1.15rem; min-width: 0; padding: 1.15rem; border: 1px solid var(--border-hairline); border-radius: 12px; background: var(--surface-card); box-shadow: var(--shadow-card); }
 .catalog-filters-heading { display: flex; align-items: center; justify-content: space-between; }
 .catalog-filters-heading h2 { margin: 0; color: #112d3d; font-size: 0.98rem; font-weight: 800; }
-.catalog-filter-close { display: none; border: 0; background: none; color: var(--store-muted); font-size: 1.6rem; cursor: pointer; }
+.catalog-filter-close { display: none; width: 40px; height: 40px; border: 0; background: none; color: var(--store-muted); font-size: 1.6rem; line-height: 1; cursor: pointer; }
 .catalog-filters fieldset { display: grid; gap: 0.55rem; min-width: 0; margin: 0; padding: 0 0 1rem; border: 0; border-bottom: 1px solid var(--border-hairline); }
 .catalog-filters legend { margin-bottom: 0.25rem; color: #142f40; font-size: 0.86rem; font-weight: 800; }
-.catalog-filter-option { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; align-items: center; gap: 0.55rem; color: #667b86; font-size: 0.81rem; cursor: pointer; }
+/* The whole label is the tap target (it wraps the radio), so it carries the
+   36px minimum rather than the 15px input inside it. */
+.catalog-filter-option { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; min-height: 36px; align-items: center; gap: 0.55rem; color: #667b86; font-size: 0.81rem; cursor: pointer; }
 .catalog-filter-option input { width: 15px; height: 15px; margin: 0; accent-color: #08785c; }
 .catalog-filter-option small { color: #748691; font-size: 0.7rem; }
 .catalog-price-label,.catalog-min-range-label { color: #6f818a; font-size: 0.78rem; }
-.catalog-filters input[type="range"] { width: 100%; accent-color: #08785c; }
+/* A 16px-tall slider is awkward on touch; the extra height is padding around
+   the same track, so the control looks unchanged but is easier to grab. */
+.catalog-filters input[type="range"] { width: 100%; height: 32px; accent-color: #08785c; }
 .catalog-min-range-label { margin-top: 0.2rem; }
 .catalog-price-inputs { display: grid; grid-template-columns: 1fr 1fr; gap: 0.55rem; }
 .catalog-price-inputs label { display: flex; min-width: 0; align-items: center; gap: 0.4rem; min-height: 40px; padding: 0 0.6rem; border: 1px solid var(--border-hairline); border-radius: 8px; color: #78909a; }
-.catalog-price-inputs input { width: 100%; min-width: 0; border: 0; outline: 0; color: #435b67; background: transparent; font: inherit; font-size: 0.8rem; }
+/* Fills its 40px bordered wrapper so the whole pill is the tap target. */
+.catalog-price-inputs input { width: 100%; min-width: 0; height: 100%; align-self: stretch; border: 0; outline: 0; color: #435b67; background: transparent; font: inherit; font-size: 0.8rem; }
 .catalog-price-inputs input::-webkit-inner-spin-button,.catalog-price-inputs input::-webkit-outer-spin-button { margin: 0; appearance: none; }
 .catalog-filter-buttons { display: grid; gap: 0.55rem; }
 .catalog-filter-buttons .store-button { min-height: 40px; font-size: 0.78rem; }
@@ -799,7 +848,8 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
 .catalog-search-field { display: flex; width: 220px; min-height: 40px; align-items: center; gap: 0.4rem; padding: 0 0.65rem; border: 1px solid var(--border-hairline); border-radius: 8px; background: var(--surface-card); color: #60747d; }
 .catalog-search-field:focus-within { border-color: #087b60; box-shadow: 0 0 0 3px rgba(8, 129, 102, 0.12); }
 .catalog-search-field > span { font-size: 1.2rem; line-height: 1; }
-.catalog-search-field input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: #173344; font-size: 0.8rem; }
+/* Fills the 40px bordered pill so the whole control is the tap target. */
+.catalog-search-field input { width: 100%; min-width: 0; height: 100%; align-self: stretch; min-height: 38px; border: 0; outline: 0; background: transparent; color: #173344; font-size: 0.8rem; }
 .catalog-sort { display: flex; align-items: center; gap: 0.45rem; color: #173344; font-size: 0.82rem; white-space: nowrap; }
 .catalog-sort select { min-height: 40px; min-width: 150px; padding: 0.35rem 1.8rem 0.35rem 0.65rem; border: 1px solid var(--border-hairline); border-radius: 8px; background: var(--surface-card); color: #183245; font-size: 0.8rem; }
 .catalog-sort select:focus-visible { outline: 3px solid rgba(8, 129, 102, 0.3); outline-offset: 1px; }
@@ -857,7 +907,8 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
 .catalog-page .shop-product-card__title a { display: -webkit-box; overflow: hidden; color: #173c30; text-decoration: none; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
 .catalog-page .shop-product-card__title a:hover { color: #087b60; }
 .catalog-page .commerce-product-badge { top: 0.65rem; left: 0.65rem; padding: 0.28rem 0.48rem; font-size: 0.66rem; }
-.catalog-page .commerce-wishlist-toggle { top: 0.55rem; right: 0.55rem; width: 30px; height: 30px; font-size: 1.1rem; }
+/* 36px, not 30px: this is a primary touch control on the shop grid. */
+.catalog-page .commerce-wishlist-toggle { top: 0.55rem; right: 0.55rem; width: 36px; height: 36px; font-size: 1.1rem; }
 .catalog-page .commerce-product-body { padding: 0.85rem 0.9rem 0.95rem; }
 /* Each text block is a fixed number of lines so price and actions align across the row. */
 .catalog-page .commerce-product-category { display: block; margin-bottom: 0.3rem !important; color: #6d8a7a; font-size: 0.64rem; letter-spacing: 0.09em; }
@@ -1023,16 +1074,34 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
 .account-password-field button { flex: 0 0 auto; border: 0; background: none; color: var(--store-green); font-size: 0.78rem; font-weight: 750; cursor: pointer; }
 /* Auth dialog: centred on desktop, bottom sheet on mobile. Uses the existing
    surface/brand tokens only. */
-.auth-overlay { position: fixed; z-index: 300; inset: 0; display: grid; place-items: center; padding: 1rem; background: rgba(14, 36, 24, 0.45); }
-.auth-dialog { position: relative; width: min(420px, 100%); max-height: calc(100dvh - 2rem); overflow-y: auto; padding: 1.5rem; border: 1px solid var(--border-hairline); border-radius: 16px; background: var(--surface-card); box-shadow: var(--shadow-card-hover); }
-.auth-dialog h2 { margin: 0 0 0.35rem; color: var(--brand-ink); font-size: 1.25rem; }
-.auth-sub { margin: 0 0 1.1rem; color: var(--store-muted); font-size: 0.86rem; line-height: 1.5; }
-.auth-dialog label { display: block; margin-bottom: 0.35rem; color: var(--store-ink); font-size: 0.82rem; font-weight: 650; }
-.auth-dialog input[type="tel"],.auth-dialog input[type="text"] { width: 100%; min-width: 0; min-height: 44px; padding: 0.65rem 0.75rem; border: 1px solid var(--border-hairline); border-radius: 10px; background: var(--surface-card); color: var(--store-ink); font: inherit; }
-.auth-dialog input:focus-visible { outline: 3px solid rgba(8, 129, 102, 0.3); outline-offset: 1px; }
-.auth-submit { width: 100%; margin-top: 1rem; }
-.auth-close { position: absolute; top: 0.6rem; right: 0.7rem; border: 0; background: none; color: var(--store-muted); font-size: 1.6rem; line-height: 1; cursor: pointer; }
-.auth-close:focus-visible { outline: 3px solid rgba(8, 129, 102, 0.3); outline-offset: 2px; border-radius: 6px; }
+.auth-overlay { position: fixed; z-index: 300; inset: 0; display: grid; place-items: center; padding: 1rem; background: rgba(12, 32, 22, 0.55); backdrop-filter: blur(3px); }
+.auth-dialog { position: relative; width: min(428px, 100%); max-height: calc(100dvh - 2rem); overflow-y: auto; padding: 1.75rem 1.6rem 1.5rem; border: 1px solid var(--border-hairline); border-radius: 18px; background: var(--surface-card); box-shadow: 0 24px 60px rgba(10, 32, 21, 0.28); }
+/* A thin brand band across the top so the dialog is unmistakably ours. */
+.auth-dialog::before { position: absolute; top: 0; right: 0; left: 0; height: 4px; border-radius: 18px 18px 0 0; background: linear-gradient(90deg, var(--brand-ink), #2d8a5f); content: ""; }
+
+.auth-brand { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1.15rem; }
+.auth-brand__mark { display: grid; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border-radius: 11px; background: var(--surface-tinted); color: var(--store-green); }
+.auth-brand__mark svg { width: 21px; height: 21px; }
+.auth-brand__text { display: grid; gap: 0.05rem; min-width: 0; }
+.auth-brand__text strong { color: var(--brand-ink); font-size: 0.82rem; font-weight: 800; letter-spacing: 0.06em; }
+.auth-brand__text small { color: var(--store-muted); font-size: 0.68rem; letter-spacing: 0.02em; }
+
+.auth-dialog h2 { margin: 0 0 0.4rem; color: var(--brand-ink); font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.25; }
+.auth-sub { margin: 0 0 1.25rem; color: var(--store-muted); font-size: 0.86rem; line-height: 1.6; }
+.auth-dialog label { display: block; margin-bottom: 0.4rem; color: var(--store-ink); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.02em; }
+/* email and password were missing from this list, so those fields rendered
+   unstyled and narrow once the new sign-in methods were added. */
+.auth-dialog input[type="tel"],.auth-dialog input[type="text"],.auth-dialog input[type="email"],.auth-dialog input[type="password"] { width: 100%; min-width: 0; min-height: 50px; padding: 0.7rem 0.85rem; border: 1px solid var(--border-hairline); border-radius: 11px; background: var(--surface-card); color: var(--store-ink); font: inherit; font-size: 1rem; transition: border-color 150ms ease, box-shadow 150ms ease; }
+.auth-dialog input::placeholder { color: #9fb0a6; }
+.auth-dialog input:focus-visible { outline: 0; border-color: var(--store-green); box-shadow: 0 0 0 3px rgba(20, 91, 58, 0.15); }
+
+.auth-submit { width: 100%; min-height: 50px; margin-top: 1.15rem; border-radius: 11px; font-size: 0.95rem; }
+.auth-submit:disabled { opacity: 0.45; cursor: not-allowed; }
+.auth-legal { margin: 0.9rem 0 0; color: var(--store-muted); font-size: 0.72rem; line-height: 1.55; text-align: center; }
+
+.auth-close { position: absolute; top: 0.85rem; right: 0.85rem; display: grid; width: 34px; height: 34px; place-items: center; border: 1px solid var(--border-hairline); border-radius: 50%; background: var(--surface-card); color: var(--store-muted); font-size: 1.15rem; line-height: 1; cursor: pointer; transition: background-color 150ms ease, color 150ms ease; }
+.auth-close:hover { background: var(--surface-tinted); color: var(--brand-ink); }
+.auth-close:focus-visible { outline: 3px solid rgba(20, 91, 58, 0.3); outline-offset: 2px; }
 .auth-linkish { border: 0; background: none; padding: 0; color: var(--store-green); font: inherit; font-weight: 650; text-decoration: underline; cursor: pointer; }
 .auth-linkish:disabled { color: var(--store-muted); cursor: not-allowed; text-decoration: none; }
 .auth-resend { margin: 0.8rem 0 0; color: var(--store-muted); font-size: 0.8rem; text-align: center; }
@@ -1040,7 +1109,6 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
 .otp-boxes { display: flex; gap: 0.45rem; justify-content: space-between; }
 .otp-box { width: 100%; min-width: 0; height: 52px; padding: 0; border: 1px solid var(--border-hairline); border-radius: 10px; background: var(--surface-card); color: var(--store-ink); font-size: 1.2rem; font-weight: 700; text-align: center; }
 .otp-box:focus-visible { outline: 3px solid rgba(8, 129, 102, 0.3); outline-offset: 1px; border-color: var(--store-green); }
-.mobile-menu-signin { border: 0; background: none; padding: 0; font: inherit; text-align: left; color: inherit; cursor: pointer; }
 .account-muted { margin: 0 0 0.8rem; color: var(--store-muted); font-size: 0.84rem; line-height: 1.55; }
 /* ===========================================================================
    Order & payment design system. Shared by /checkout, /order/[orderId] and
@@ -1095,6 +1163,20 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
 .summary-amounts > div { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; }
 .summary-amounts dt { color: var(--store-muted); font-size: 0.83rem; }
 .summary-amounts dd { margin: 0; color: var(--store-ink); font-size: 0.85rem; font-weight: 650; }
+.summary-amounts__discount dt { color: var(--store-green) !important; font-weight: 650; }
+.summary-amounts__discount dd { color: var(--store-green) !important; }
+
+/* Coupon field inside the order summary. */
+.coupon-field { margin: 0 0 1rem; padding: 0.85rem 0; border-top: 1px solid var(--border-hairline); border-bottom: 1px solid var(--border-hairline); }
+.coupon-field > label { display: block; margin-bottom: 0.4rem; color: var(--store-ink); font-size: 0.78rem; font-weight: 650; }
+.coupon-field__row { display: flex; gap: 0.45rem; }
+.coupon-field input { flex: 1 1 auto; min-width: 0; min-height: 42px; padding: 0.5rem 0.65rem; border: 1px solid var(--border-hairline); border-radius: 9px; background: var(--surface-card); color: var(--store-ink); font: inherit; font-size: 0.85rem; letter-spacing: 0.06em; text-transform: uppercase; }
+.coupon-field input:focus-visible { outline: 0; border-color: var(--store-green); box-shadow: 0 0 0 3px rgba(8, 129, 102, 0.14); }
+.coupon-field input[aria-invalid="true"] { border-color: #c08a8a; }
+.coupon-field__clear { flex: 0 0 auto; min-height: 42px; padding: 0 0.8rem; border: 1px solid var(--border-hairline); border-radius: 9px; background: var(--surface-card); color: var(--store-muted); font: inherit; font-size: 0.8rem; font-weight: 650; cursor: pointer; }
+.coupon-field__clear:hover:not(:disabled) { border-color: #cddccf; color: var(--store-ink); }
+.coupon-field__status { margin: 0.4rem 0 0; min-height: 1.1em; color: var(--store-muted); font-size: 0.74rem; line-height: 1.45; }
+
 .summary-total { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding-top: 0.85rem; border-top: 1px solid var(--border-hairline); }
 .summary-total span { color: var(--store-ink); font-size: 0.92rem; font-weight: 700; }
 .summary-total strong { color: var(--brand-ink); font-size: 1.3rem; font-weight: 800; letter-spacing: -0.02em; }
@@ -1147,52 +1229,38 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
 /* Wide enough that the subtitle does not break mid-phrase on desktop. */
 .credentials-section .store-section-heading p { max-width: 78ch; margin: 0; color: var(--store-muted); font-size: 0.88rem; line-height: 1.6; }
 
-/* Identity banner: the company the registrations belong to, given primacy
-   instead of sitting in the grid as a peer of a licence number. */
-.credential-identity { display: flex; flex-wrap: wrap; align-items: center; gap: 0.85rem 1.25rem; margin-bottom: 1rem; padding: 1rem 1.15rem; border: 1px solid var(--border-hairline); border-radius: 14px; background: var(--surface-card); box-shadow: var(--shadow-card); }
-.credential-identity__mark { display: grid; width: 42px; height: 42px; flex: 0 0 42px; place-items: center; border-radius: 12px; background: var(--surface-tinted); color: var(--store-green); }
-.credential-identity__mark svg { width: 23px; height: 23px; }
-.credential-identity > div { min-width: 0; flex: 1 1 260px; }
-.credential-identity__label { margin: 0; color: var(--store-muted); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
-.credential-identity__name { margin: 0.15rem 0 0; color: var(--brand-ink); font-size: 1.08rem; font-weight: 750; letter-spacing: -0.01em; overflow-wrap: anywhere; }
-.credential-identity__cin { display: grid; gap: 0.15rem; margin: 0; padding-left: 1.25rem; border-left: 1px solid var(--border-hairline); }
-.credential-identity__cin span { color: var(--store-muted); font-size: 0.68rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; }
-.credential-identity__cin strong { padding: 0.4rem 0.6rem; border: 1px solid #dcebe1; border-radius: 8px; background: var(--surface-tinted); color: var(--brand-ink); font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, Consolas, monospace; font-size: 0.88rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: 0.04em; overflow-wrap: anywhere; }
-
-/* Four themed groups rather than eight interchangeable cells. */
-.credential-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(235px, 1fr)); gap: 0.75rem; margin-bottom: 1.1rem; }
-.credential-group { display: grid; align-content: start; gap: 0.7rem; min-width: 0; padding: 1rem 1.05rem; border: 1px solid var(--border-hairline); border-radius: 14px; background: var(--surface-card); box-shadow: var(--shadow-card); }
-.credential-group h3 { display: flex; align-items: center; gap: 0.5rem; margin: 0; padding-bottom: 0.7rem; border-bottom: 1px solid var(--border-hairline); color: var(--brand-ink); font-size: 0.82rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
-.credential-group h3 svg { width: 19px; height: 19px; flex: 0 0 19px; color: var(--store-green); }
-.credential-group dl { display: grid; gap: 0.75rem; margin: 0; }
-.credential-group dt { margin-bottom: 0.3rem; color: var(--store-muted); font-size: 0.68rem; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; }
-/* The number is the point of each row, so it is set as a highlighted token:
-   tinted field, monospaced figures, generous tracking. Long values break
-   rather than widening the grid. */
-.credential-group dd {
-  display: block;
-  margin: 0;
-  padding: 0.4rem 0.6rem;
+/* Label/value table mirroring the official credentials page, field for field.
+   Striped rows and a hairline divider keep it scannable; the registration
+   numbers are set as highlighted monospace tokens so they stand out. */
+.credential-table { display: grid; margin: 0 0 1.1rem; overflow: hidden; border: 1px solid var(--border-hairline); border-radius: 14px; background: var(--surface-card); box-shadow: var(--shadow-card); }
+.credential-row { display: grid; grid-template-columns: minmax(170px, 260px) minmax(0, 1fr); align-items: start; gap: 0 1.25rem; padding: 0.85rem 1.1rem; border-bottom: 1px solid var(--border-hairline); }
+.credential-row:last-child { border-bottom: 0; }
+.credential-row:nth-child(odd) { background: #f7faf7; }
+.credential-row dt { color: var(--brand-ink); font-size: 0.82rem; font-weight: 750; line-height: 1.5; }
+.credential-row dd { display: grid; gap: 0.4rem; justify-items: start; margin: 0; min-width: 0; color: var(--store-ink); font-size: 0.88rem; line-height: 1.55; overflow-wrap: anywhere; }
+.credential-line { color: var(--store-ink); }
+.credential-code {
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
   border: 1px solid #dcebe1;
-  border-radius: 8px;
+  border-radius: 7px;
   background: var(--surface-tinted);
   color: var(--brand-ink);
   font-family: ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, Consolas, monospace;
-  font-size: 0.9rem;
+  font-size: 0.88rem;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.04em;
-  line-height: 1.45;
   overflow-wrap: anywhere;
 }
 
 .credential-note { margin: 0; padding-top: 0.95rem; border-top: 1px solid var(--border-hairline); color: var(--store-muted); font-size: 0.78rem; line-height: 1.65; }
 
-@media (max-width: 560px) {
+@media (max-width: 640px) {
   .credentials-section { padding: 1.1rem 0.95rem; border-radius: 14px; }
-  .credential-groups { grid-template-columns: minmax(0, 1fr); gap: 0.6rem; }
-  /* The CIN divider reads as a stray rule once the banner stacks. */
-  .credential-identity__cin { padding-left: 0; border-left: 0; padding-top: 0.7rem; border-top: 1px solid var(--border-hairline); width: 100%; }
+  /* Stack label above value; a two-column table is unreadable this narrow. */
+  .credential-row { grid-template-columns: minmax(0, 1fr); gap: 0.35rem; padding: 0.8rem 0.9rem; }
+  .credential-row dt { font-size: 0.74rem; letter-spacing: 0.04em; text-transform: uppercase; }
 }
 
 /* Newsletter -------------------------------------------------------------- */
@@ -1290,7 +1358,10 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
 
 .panel__headrow { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0.4rem 1rem; margin-bottom: 0.9rem; }
 .panel__headrow .panel__heading { margin: 0; }
-.panel__link { border: 0; background: none; padding: 0; color: var(--store-green); font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
+/* These text buttons are real actions (Edit, Publish, Archive, View details,
+   Correct address), not prose links, and were only ~19px tall. inline-flex
+   with a 32px minimum gives a comfortable target without changing the look. */
+.panel__link { display: inline-flex; min-height: 32px; align-items: center; border: 0; background: none; padding: 0; color: var(--store-green); font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
 .panel__link:hover { text-decoration: underline; }
 .panel__link:focus-visible { outline: 3px solid rgba(8, 129, 102, 0.3); outline-offset: 2px; border-radius: 4px; }
 .account-stat { margin: 0 0 0.3rem; color: var(--store-ink); font-size: 0.9rem; }
@@ -1403,8 +1474,11 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
 
 /* Phone sign-in. Reuses the account form styling; only the parts the OTP flow
    adds are defined here. */
-.phone-auth-field { display: flex; align-items: center; gap: 0.5rem; }
-.phone-auth-prefix { flex: 0 0 auto; padding: 0 0.6rem; min-height: 44px; display: grid; place-items: center; border: 1px solid var(--border-hairline); border-radius: 10px; background: var(--surface-tinted); color: var(--store-green-dark); font-weight: 700; }
+/* Prefix and input read as one control rather than two detached boxes. */
+.phone-auth-field { display: flex; align-items: stretch; }
+.phone-auth-prefix { flex: 0 0 auto; display: grid; min-height: 50px; padding: 0 0.85rem; place-items: center; border: 1px solid var(--border-hairline); border-right: 0; border-radius: 11px 0 0 11px; background: var(--surface-tinted); color: var(--store-green-dark); font-size: 0.95rem; font-weight: 750; }
+.auth-dialog .phone-auth-field input { border-radius: 0 11px 11px 0; }
+.auth-dialog .phone-auth-field:focus-within .phone-auth-prefix { border-color: var(--store-green); }
 .phone-auth-field input { flex: 1 1 auto; min-width: 0; }
 .phone-auth-code { letter-spacing: 0.45em; font-size: 1.1rem; }
 .phone-auth-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.6rem; margin-top: 0.75rem; }
@@ -1509,7 +1583,7 @@ main.site-redesign ~ footer.site-footer .copyright { width: min(1240px, calc(100
   .catalog-layout { display: block; }
   .catalog-filters { position: fixed; z-index: 202; top: 0; right: 0; bottom: 0; display: flex; width: min(360px, 88vw); flex-direction: column; gap: 1.25rem; overflow-y: auto; border: 0; border-radius: 18px 0 0 18px; padding: 1.25rem; transform: translateX(105%); transition: transform 220ms ease; }
   .catalog-filters.is-open { transform: translateX(0); }
-  .catalog-filter-close { display: block; }
+  .catalog-filter-close { display: grid; place-items: center; }
   .catalog-filter-buttons { margin-top: auto; }
   .catalog-filter-apply { display: inline-flex; }
   .catalog-filter-scrim { position: fixed; z-index: 201; inset: 0; display: block; border: 0; background: rgba(14, 36, 24, 0.42); }
@@ -1858,3 +1932,111 @@ body[data-page="home"] main > .home-leadership-wrap {
   .home-leadership-role { margin-bottom: 0.35rem; font-size: 0.82rem; }
   .home-leadership-bio { font-size: 0.76rem; line-height: 1.45; }
 }
+
+/* ── Delivery tracking ─────────────────────────────────────────────────────
+   Timeline, courier card and address book. Sized in rem so the whole block
+   scales with the surrounding type, and single-column below 640px.          */
+
+.order-grid__stack { display: grid; gap: 1rem; align-content: start; }
+
+.track-card { margin-top: 1rem; }
+.track-card__head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.6rem; }
+
+.track-pill { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 999px; background: var(--surface-tinted); color: var(--brand-ink); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em; white-space: nowrap; }
+.track-pill--shipped { background: #e4eefb; color: #1d4f8b; }
+.track-pill--delivered { background: #e3f3e8; color: #0f6b4f; }
+.track-pill--cancelled { background: #f7e9e9; color: #9a4c4c; }
+.track-pill--pending { background: #fdf2e0; color: #8a5a1b; }
+
+.track-estimate { display: grid; gap: 0.15rem; margin: 0.75rem 0 1.1rem; padding: 0.7rem 0.85rem; border: 1px solid var(--border-hairline); border-radius: 11px; background: var(--surface-tinted); color: var(--store-ink); font-size: 0.9rem; }
+.track-estimate strong { color: var(--brand-ink); }
+.track-estimate small { color: var(--store-muted); font-size: 0.76rem; }
+.track-estimate--none { color: var(--store-muted); font-weight: 650; }
+
+.track-steps { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
+.track-step { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 0.75rem; padding-bottom: 1.1rem; }
+.track-step:last-child { padding-bottom: 0; }
+/* The connector is drawn on the dot column so it lines up at any text size. */
+.track-step__dot { position: relative; display: grid; width: 22px; height: 22px; place-items: center; border: 2px solid var(--border-hairline); border-radius: 50%; background: var(--surface-card); color: #fff; font-size: 0.7rem; font-weight: 800; }
+.track-step:not(:last-child) .track-step__dot::after { content: ""; position: absolute; top: 22px; left: 50%; width: 2px; height: calc(100% + 1.1rem - 22px); transform: translateX(-50%); background: var(--border-hairline); }
+.track-step.is-done .track-step__dot { border-color: var(--store-green); background: var(--store-green); }
+.track-step.is-done:not(:last-child) .track-step__dot::after { background: var(--store-green); }
+.track-step.is-current .track-step__dot { border-color: var(--store-green); background: var(--surface-card); box-shadow: 0 0 0 4px rgba(20, 91, 58, 0.14); }
+.track-step__body { display: grid; gap: 0.1rem; min-width: 0; padding-top: 0.05rem; }
+.track-step__body strong { color: var(--brand-ink); font-size: 0.92rem; font-weight: 700; }
+.track-step__body small { color: var(--store-muted); font-size: 0.78rem; line-height: 1.5; }
+.track-step__body time { color: var(--store-green); font-size: 0.76rem; font-weight: 650; }
+.track-step.is-upcoming .track-step__body strong { color: var(--store-muted); font-weight: 650; }
+
+.track-cancelled { padding: 0.85rem; border: 1px solid #e8d2d2; border-radius: 11px; background: #fcf4f4; color: #7d3c3c; }
+.track-cancelled p { margin: 0 0 0.25rem; font-size: 0.88rem; }
+.track-cancelled p:last-child { margin-bottom: 0; }
+.track-cancelled__when, .track-cancelled__note { font-size: 0.8rem !important; }
+
+.track-courier { margin-top: 1.1rem; padding-top: 1rem; border-top: 1px solid var(--border-hairline); }
+.track-courier h3 { margin: 0 0 0.5rem; color: var(--brand-ink); font-size: 0.92rem; font-weight: 750; }
+.track-courier__num { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; overflow-wrap: anywhere; }
+.track-source { margin: 1rem 0 0; color: var(--store-muted); font-size: 0.74rem; line-height: 1.6; }
+
+.order-address__phone { color: var(--store-muted); }
+.address-card .panel__hint { margin-bottom: 0; }
+
+.order-list__badges { display: flex; flex-wrap: wrap; gap: 0.35rem; margin-left: auto; }
+
+/* ── Saved addresses ─────────────────────────────────────────────────────── */
+.address-book__list { display: grid; gap: 0.75rem; margin: 0.6rem 0 0; padding: 0; list-style: none; }
+.address-book__list > li { padding: 0.85rem; border: 1px solid var(--border-hairline); border-radius: 12px; background: var(--surface-card); }
+.address-book__list > li.is-default { border-color: var(--store-green); }
+.address-book__head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+.address-book__head strong { color: var(--brand-ink); font-size: 0.88rem; }
+.address-book__tag { padding: 0.12rem 0.5rem; border-radius: 999px; background: #e3f3e8; color: #0f6b4f; font-size: 0.68rem; font-weight: 750; }
+.address-book__actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem; margin-top: 0.5rem; }
+.address-book__confirm { color: var(--store-muted); font-size: 0.8rem; }
+.panel__link--danger { color: #9a4c4c; }
+
+/* ── Checkout address picker ─────────────────────────────────────────────── */
+.address-picker { display: grid; gap: 0.5rem; margin: 0 0 1rem; padding: 0; border: 0; }
+.address-picker legend { padding: 0; margin-bottom: 0.3rem; color: var(--brand-ink); font-size: 0.82rem; font-weight: 750; }
+.address-picker__option { display: flex; align-items: flex-start; gap: 0.6rem; padding: 0.7rem 0.8rem; border: 1px solid var(--border-hairline); border-radius: 11px; background: var(--surface-card); cursor: pointer; transition: border-color 150ms ease, background-color 150ms ease; }
+.address-picker__option:hover { border-color: var(--store-green); }
+.address-picker__option.is-chosen { border-color: var(--store-green); background: var(--surface-tinted); }
+.address-picker__option input { margin-top: 0.2rem; accent-color: var(--store-green); }
+.address-picker__option > span { display: grid; gap: 0.1rem; min-width: 0; }
+.address-picker__option strong { color: var(--brand-ink); font-size: 0.86rem; }
+.address-picker__option small { color: var(--store-muted); font-size: 0.78rem; line-height: 1.5; overflow-wrap: anywhere; }
+
+@media (max-width: 640px) {
+  .track-card__head { align-items: flex-start; }
+  .track-step { grid-template-columns: 22px minmax(0, 1fr); gap: 0.6rem; }
+  .order-list__badges { margin-left: 0; }
+  .address-book__actions { gap: 0.6rem; }
+}
+
+/* ── Auth modal: Google and email + password ─────────────────────────────────
+   Uses the dialog's existing tokens, spacing and control sizes so the added
+   methods look native to the current design rather than bolted on.          */
+.auth-google { display: flex; width: 100%; min-height: 48px; align-items: center; justify-content: center; gap: 0.6rem; padding: 0.6rem 1rem; border: 1px solid var(--border-hairline); border-radius: 11px; background: var(--surface-card); color: var(--store-ink); font: inherit; font-size: 0.92rem; font-weight: 650; cursor: pointer; transition: background-color 150ms ease, border-color 150ms ease; }
+.auth-google:hover:not(:disabled) { border-color: var(--store-green); background: var(--surface-tinted); }
+.auth-google:focus-visible { outline: 3px solid rgba(20, 91, 58, 0.35); outline-offset: 2px; }
+.auth-google:disabled { opacity: 0.55; cursor: not-allowed; }
+.auth-google svg { width: 18px; height: 18px; flex: 0 0 18px; }
+
+.auth-divider { display: flex; align-items: center; gap: 0.7rem; margin: 1rem 0 0.9rem; color: var(--store-muted); font-size: 0.74rem; }
+.auth-divider::before, .auth-divider::after { content: ""; flex: 1 1 auto; height: 1px; background: var(--border-hairline); }
+
+.auth-password-field { display: flex; align-items: center; gap: 0.3rem; }
+.auth-password-field input { flex: 1 1 auto; min-width: 0; }
+.auth-password-toggle { flex: 0 0 auto; min-height: 44px; padding: 0 0.6rem; border: 0; border-radius: 8px; background: none; color: var(--store-green); font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
+.auth-password-toggle:hover { background: var(--surface-tinted); }
+.auth-password-toggle:focus-visible { outline: 3px solid rgba(20, 91, 58, 0.3); outline-offset: 1px; }
+
+.auth-switch, .auth-alt { margin: 0.75rem 0 0; color: var(--store-muted); font-size: 0.82rem; text-align: center; }
+.auth-alt { margin-top: 0.5rem; }
+.auth-alt .auth-linkish, .auth-switch .auth-linkish { min-height: 32px; }
+
+/* Verified vs self-declared contact details in the account profile. */
+.profile-verified, .profile-unverified { display: inline-block; margin-left: 0.4rem; padding: 0.08rem 0.4rem; border-radius: 999px; font-size: 0.64rem; font-weight: 750; letter-spacing: 0.02em; text-transform: uppercase; vertical-align: middle; }
+.profile-verified { background: #e3f3e8; color: #0f6b4f; }
+.profile-unverified { background: var(--surface-tinted); color: var(--store-muted); }
+/* Breathing room between stacked fields in the email sign-in form. */
+.auth-dialog input + label, .auth-dialog .auth-password-field + label { margin-top: 0.85rem; }
