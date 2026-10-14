@@ -1,5 +1,9 @@
-```yaml
 trigger:
+  branches:
+    include:
+      - main
+
+pr:
   branches:
     include:
       - main
@@ -18,6 +22,8 @@ steps:
   - script: |
       corepack enable
       corepack prepare pnpm@12.11.2 --activate
+      pnpm --version
+      node --version
       pnpm install --frozen-lockfile
     displayName: 'Install dependencies'
 
@@ -28,4 +34,3 @@ steps:
   - script: |
       pnpm run build
     displayName: 'Build Next.js application'
-```
