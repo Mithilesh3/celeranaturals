@@ -1,0 +1,31 @@
+```yaml
+trigger:
+  branches:
+    include:
+      - main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+
+  - task: NodeTool@0
+    displayName: 'Install Node.js 22'
+    inputs:
+      versionSpec: '22.x'
+
+  - script: |
+      corepack enable
+      corepack prepare pnpm@12.11.2 --activate
+      pnpm install --frozen-lockfile
+    displayName: 'Install dependencies'
+
+  - script: |
+      pnpm run typecheck
+    displayName: 'Run TypeScript check'
+
+  - script: |
+      pnpm run build
+    displayName: 'Build Next.js application'
+```
