@@ -1,3 +1,4 @@
+
 trigger:
   branches:
     include:
@@ -15,6 +16,7 @@ steps:
       sshEndpoint: 'CeleraAzureVM'
       runOptions: 'inline'
       readyTimeout: '20000'
+      failOnStdErr: false
       inline: |
         set -eu
 
@@ -42,7 +44,6 @@ steps:
         pnpm run build
 
         echo "Starting or restarting application..."
-
         if pm2 describe "$APP_NAME" >/dev/null 2>&1; then
           pm2 restart "$APP_NAME" --update-env
         else
@@ -55,24 +56,26 @@ steps:
 
         echo "Checking website health..."
         ATTEMPTS=12
+        HEALTH_OK=0
 
         for i in $(seq 1 "$ATTEMPTS"); do
-          if curl --connect-timeout 3 -fsS \
+          if curl --connect-timeout 3 --max-time 10 -fsS \
             "http://127.0.0.1:${APP_PORT}/" \
             -o /dev/null; then
             echo "Website health check passed."
+            HEALTH_OK=1
             break
-          fi
-
-          if [ "$i" -eq "$ATTEMPTS" ]; then
-            echo "ERROR: Website health check failed."
-            pm2 status
-            pm2 logs "$APP_NAME" --err --lines 50 --nostream || true
-            exit 1
           fi
 
           echo "Attempt $i/$ATTEMPTS failed; waiting..."
           sleep 5
         done
+
+        if [ "$HEALTH_OK" -ne 1 ]; then
+          echo "ERROR: Website health check failed."
+          pm2 status
+          pm2 logs "$APP_NAME" --err --lines 50 --nostream || true
+          exit 1
+        fi
 
         echo "Deployment completed successfully."
