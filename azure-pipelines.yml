@@ -3,34 +3,54 @@ trigger:
     include:
       - main
 
-pr:
-  branches:
-    include:
-      - main
-
 pool:
   vmImage: ubuntu-latest
 
 steps:
-  - checkout: self
+  - checkout: none
 
-  - task: NodeTool@0
-    displayName: 'Install Node.js 22'
+  - task: SSH@0
+    displayName: 'Deploy Celeranaturals to Azure VM'
     inputs:
-      versionSpec: '22.x'
+      sshEndpoint: 'CeleraAzureVM'
+      runOptions: 'inline'
+      readyTimeout: '20000'
+      inline: |
+        set -eu
 
-  - script: |
-      corepack enable
-      corepack prepare pnpm@12.11.2 --activate
-      pnpm --version
-      node --version
-      pnpm install --frozen-lockfile
-    displayName: 'Install dependencies'
+        APP_DIR="/home/azureuser/apps/celeranaturals"
+        cd "$APP_DIR"
 
-  - script: |
-      pnpm run typecheck
-    displayName: 'Run TypeScript check'
+        echo "Fetching latest code..."
+        git fetch origin main
+        git reset --hard origin/main
 
-  - script: |
-      pnpm run build
-    displayName: 'Build Next.js application'
+        echo "Preparing pnpm..."
+        corepack enable
+        corepack prepare pnpm@12.11.2 --activate
+
+        echo "Installing dependencies..."
+        pnpm install --frozen-lockfile
+
+        echo "Checking TypeScript..."
+        pnpm run typecheck
+
+        echo "Building Next.js..."
+        pnpm run build
+
+        echo "Starting or restarting application..."
+        if pm2 describe celeranaturals >/dev/null 2>&1; then
+          pm2 restart celeranaturals --update-env
+        else
+          pm2 start node_modules/next/dist/bin/next \
+            --name celeranaturals \
+            -- start -H 0.0.0.0 -p 3002
+        fi
+
+        pm2 save
+
+        echo "Checking website response..."
+        sleep 5
+        curl -fsS http://127.0.0.1:3002/ >/dev/null
+
+        echo "Deployment completed successfully."
