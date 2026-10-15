@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { getActiveCategories } from "../../lib/catalog-server";
 
-export const metadata: Metadata = { title: "About Us | Celeranaturals", description: "Learn about Celeranaturals and Celera Healthcare." };
+export const metadata: Metadata = { title: "About Us | Celera Naturals", description: "Learn about Celera Naturals and Celera Healthcare." };
 
 /**
  * Transcribed verbatim from the company's official credentials page,
@@ -56,7 +56,7 @@ export default async function AboutPage() {
           <div className="about-intro-copy">
             <p className="store-eyebrow">About Celera Healthcare</p>
             <h1>Wellness support, thoughtfully brought together.</h1>
-            <p>Celeranaturals is the consumer wellness brand of Celera Healthcare. We offer focused nutraceutical products for everyday health needs, supported by clear product information and responsive customer care.</p>
+            <p>Celera Naturals is the consumer wellness brand of Celera Healthcare. We offer focused nutraceutical products for everyday health needs, supported by clear product information and responsive customer care.</p>
             <Link className="store-button store-button-primary" href="/shop">Explore the collection</Link>
           </div>
           <div className="about-intro-visual"><Image src="/assets/images/hero/pharmacy-bg-3.jpg" alt="Healthcare products and pharmacy shelves" width={2200} height={1469} sizes="(max-width: 900px) 100vw, 50vw" priority /></div>

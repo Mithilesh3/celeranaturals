@@ -12,7 +12,11 @@ import {
   STATUS_LABEL, addressLines, formatIST, hasAddressDetails, normalizeAddress, validateAddress,
   type Order, type OrderAddress, type StoredOrder,
 } from "../../lib/orders";
-import { FULFILMENT_LABEL, eventActor, type FulfilmentStatus } from "../../lib/fulfilment";
+import {
+  DELIVERY_STAGES, FULFILMENT_LABEL, deliveryStageLabel, eventActor, stageIndexOf,
+  type DeliveryStageKey, type FulfilmentStatus,
+} from "../../lib/fulfilment";
+
 import {
   ESTIMATE_DAY_OPTIONS, ISO_DATE, addDays, formatEstimateDate, istDateKey,
 } from "../../lib/delivery-estimate";
@@ -136,7 +140,7 @@ function AdminLogin() {
     <main className="admin-login">
       <section className="admin-login__brandside" aria-hidden="true">
         <AdminLogo size={88} />
-        <p className="admin-login__wordmark">CELERANATURALS</p>
+        <p className="admin-login__wordmark">CELERA NATURALS</p>
         <p className="admin-login__tagline">By Celera Healthcare</p>
         <p className="admin-login__blurb">Natural wellness, managed with care.</p>
       </section>
@@ -145,7 +149,7 @@ function AdminLogin() {
         <div className="admin-login__card">
           <div className="admin-login__mobilebrand">
             <AdminLogo size={56} />
-            <p>CELERANATURALS</p>
+            <p>CELERA NATURALS</p>
           </div>
 
           <h1>Welcome Back</h1>
@@ -470,6 +474,11 @@ function OrderDetail({ orderId, onClose, onUpdated }: { orderId: string; onClose
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
   const [target, setTarget] = useState<FulfilmentStatus | "">("");
+  // Three-stage delivery controls.
+  const [stage, setStage] = useState<DeliveryStageKey | "">("");
+  const [stageSaved, setStageSaved] = useState("");
+  const [needsCorrection, setNeedsCorrection] = useState(false);
+  const [correctionReason, setCorrectionReason] = useState("");
   const [courier, setCourier] = useState("");
   const [trackingNumber, setTrackingNumber] = useState("");
   const [trackingUrl, setTrackingUrl] = useState("");
@@ -512,6 +521,42 @@ function OrderDetail({ orderId, onClose, onUpdated }: { orderId: string; onClose
     };
   }, [onClose]);
 
+  /**
+   * Saves a delivery stage. The server canonicalises the stage and decides
+   * whether it is a forward step or a correction; this only passes the choice
+   * along, plus the reason when a correction has been confirmed.
+   */
+  const applyStage = async (asCorrection = false) => {
+    if (!stage || busy) return;
+    setBusy(true); setError(""); setStageSaved("");
+    try {
+      const response = await authFetch(`/api/admin/orders/${encodeURIComponent(orderId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          stage,
+          ...(asCorrection ? { correction: true, note: correctionReason.trim() } : {}),
+          ...(courier.trim() || trackingNumber.trim()
+            ? { courier, trackingNumber, ...(trackingUrl.trim() ? { trackingUrl: trackingUrl.trim() } : {}) }
+            : {}),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error ?? "Update failed.");
+        // The server flags a backward move so the reason field can appear.
+        if (data.needsCorrection) setNeedsCorrection(true);
+        return;
+      }
+      setStage(""); setNeedsCorrection(false); setCorrectionReason(""); setTrackingUrl("");
+      setStageSaved("Delivery status updated.");
+      await load(); onUpdated();
+    } catch {
+      setError("Network problem. The delivery status was not changed.");
+    } finally { setBusy(false); }
+  };
+
+  /** Cancelling keeps the older explicit-status path. */
   const apply = async () => {
     if (!target || busy) return;
     setBusy(true); setError("");
@@ -519,14 +564,11 @@ function OrderDetail({ orderId, onClose, onUpdated }: { orderId: string; onClose
       const response = await authFetch(`/api/admin/orders/${encodeURIComponent(orderId)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fulfilment: target,
-          ...(target === "shipped" ? { courier, trackingNumber, ...(trackingUrl.trim() ? { trackingUrl: trackingUrl.trim() } : {}) } : {}),
-        }),
+        body: JSON.stringify({ fulfilment: target }),
       });
       const data = await response.json();
       if (!response.ok) { setError(data.error ?? "Update failed."); return; }
-      setTarget(""); setConfirming(false); setTrackingUrl("");
+      setTarget(""); setConfirming(false);
       await load(); onUpdated();
     } finally { setBusy(false); }
   };
@@ -804,43 +846,80 @@ function OrderDetail({ orderId, onClose, onUpdated }: { orderId: string; onClose
             <div className="admin-drawer__foot">
                 <div className="admin-fulfil">
                   <div className="admin-fulfil__row">
-                    <h4>Delivery status — currently {FULFILMENT_LABEL[order.fulfilment]}</h4>
-                    <label className="store-sr-only" htmlFor="admin-next-status">Next status</label>
-                    <select id="admin-next-status" value={target} disabled={busy} onChange={(event) => { setTarget(event.target.value as FulfilmentStatus); setConfirming(false); }}>
-                      <option value="">Choose next status…</option>
-                      {(["confirmed", "processing", "packed", "shipped", "delivered", "cancelled"] as FulfilmentStatus[]).map((s) => (
-                        <option key={s} value={s}>{FULFILMENT_LABEL[s]}</option>
-                      ))}
-                    </select>
+                    <h4>Delivery status — currently {deliveryStageLabel(order.fulfilment)}</h4>
                   </div>
 
-                  {target === "shipped" && (
+                  {/* Exactly three stages, the same three the customer sees. */}
+                  <div className="admin-stages" role="radiogroup" aria-label="Delivery stage">
+                    {DELIVERY_STAGES.map((entry, index) => {
+                      const reached = stageIndexOf(order.fulfilment);
+                      const state = order.fulfilment === "cancelled" ? "off"
+                        : index + 1 < reached ? "done" : index + 1 === reached ? "current" : "todo";
+                      return (
+                        <label key={entry.key} className={`admin-stage admin-stage--${state}${stage === entry.key ? " is-chosen" : ""}`}>
+                          <input
+                            type="radio"
+                            name="delivery-stage"
+                            value={entry.key}
+                            checked={stage === entry.key}
+                            disabled={busy || order.fulfilment === "cancelled"}
+                            onChange={() => { setStage(entry.key); setError(""); setStageSaved(""); setNeedsCorrection(false); }}
+                          />
+                          <span>
+                            <strong>{entry.label}</strong>
+                            <small>{state === "done" ? "Completed" : state === "current" ? "Current stage" : "Not yet reached"}</small>
+                          </span>
+                        </label>
+                      );
+                    })}
+                  </div>
+
+                  {/* Optional at any stage; no longer gated on "shipped". */}
+                  <details className="admin-tracking-toggle">
+                    <summary>Courier and tracking (optional)</summary>
                     <div className="admin-tracking">
                       <input placeholder="Courier" value={courier} disabled={busy} onChange={(e) => setCourier(e.target.value)} />
                       <input placeholder="Tracking number" value={trackingNumber} disabled={busy} onChange={(e) => setTrackingNumber(e.target.value)} />
-                      <input
-                        placeholder="Tracking URL (optional)"
-                        value={trackingUrl}
-                        disabled={busy}
-                        inputMode="url"
-                        onChange={(e) => setTrackingUrl(e.target.value)}
-                      />
-                      {/* Only vetted courier domains are stored; anything else is
-                          rejected by the server rather than quietly dropped. */}
+                      <input placeholder="Tracking URL (optional)" value={trackingUrl} disabled={busy} inputMode="url" onChange={(e) => setTrackingUrl(e.target.value)} />
                       <small className="admin-note">A tracking URL is shown to the customer as a link only if it is an https page on a recognised courier domain.</small>
+                    </div>
+                  </details>
+
+                  {needsCorrection && (
+                    <div className="admin-confirm">
+                      <p>This moves the order backwards. Give a reason; it is recorded in the order history.</p>
+                      <label className="store-sr-only" htmlFor="admin-stage-reason">Reason for the correction</label>
+                      <input id="admin-stage-reason" value={correctionReason} maxLength={300} disabled={busy}
+                        placeholder="Reason for this correction" onChange={(e) => setCorrectionReason(e.target.value)} />
+                      <button className="store-button store-button-primary" type="button"
+                        disabled={busy || !correctionReason.trim()} onClick={() => void applyStage(true)}>
+                        {busy ? "Saving…" : "Confirm correction"}
+                      </button>
+                      <button className="store-button store-button-secondary" type="button" disabled={busy}
+                        onClick={() => { setNeedsCorrection(false); setCorrectionReason(""); setError(""); }}>Cancel</button>
                     </div>
                   )}
 
-                  {destructive && !confirming ? (
-                    <button className="store-button store-button-secondary" type="button" onClick={() => setConfirming(true)}>Cancel this order…</button>
-                  ) : destructive ? (
-                    <div className="admin-confirm">
-                      <p>Cancelling cannot be undone. Continue?</p>
-                      <button className="store-button store-button-primary" type="button" disabled={busy} onClick={apply}>{busy ? "Cancelling…" : "Yes, cancel order"}</button>
-                      <button className="store-button store-button-secondary" type="button" disabled={busy} onClick={() => setConfirming(false)}>Keep order</button>
-                    </div>
-                  ) : (
-                    <button className="store-button store-button-primary" type="button" disabled={!target || busy} onClick={apply}>{busy ? "Updating…" : "Update status"}</button>
+                  {!needsCorrection && (
+                    <button className="store-button store-button-primary" type="button" disabled={!stage || busy}
+                      onClick={() => void applyStage(false)}>
+                      {busy ? "Updating…" : "Update Delivery Status"}
+                    </button>
+                  )}
+
+                  {stageSaved && <p className="admin-state admin-state--ok" role="status">{stageSaved}</p>}
+
+                  {order.fulfilment !== "cancelled" && order.fulfilment !== "delivered" && (
+                    destructive && confirming ? (
+                      <div className="admin-confirm">
+                        <p>Cancelling cannot be undone. Continue?</p>
+                        <button className="store-button store-button-primary" type="button" disabled={busy} onClick={apply}>{busy ? "Cancelling…" : "Yes, cancel order"}</button>
+                        <button className="store-button store-button-secondary" type="button" disabled={busy} onClick={() => { setConfirming(false); setTarget(""); }}>Keep order</button>
+                      </div>
+                    ) : (
+                      <button className="store-button store-button-secondary admin-cancel-order" type="button" disabled={busy}
+                        onClick={() => { setTarget("cancelled"); setConfirming(true); }}>Cancel this order…</button>
+                    )
                   )}
                   <p className="admin-note">Payment status cannot be changed here. It is set only by verified Razorpay confirmation.</p>
                 </div>

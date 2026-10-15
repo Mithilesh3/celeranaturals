@@ -60,7 +60,7 @@ export function ShopClient({ initialCategory, initialSearch }: { initialCategory
             <div>
               <h1>Shop All Products</h1>
               <p>Explore healthcare and wellness essentials.</p>
-              <p className="catalog-total-count">{products.length} products in the Celeranaturals range</p>
+              <p className="catalog-total-count">{products.length} products in the Celera Naturals range</p>
             </div>
           </div>
           <div className="catalog-trust-strip" aria-label="Shopping assurances">

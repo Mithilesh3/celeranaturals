@@ -2108,3 +2108,101 @@ body[data-page="home"] main > .home-leadership-wrap {
 .auth-forgot { margin: 0.4rem 0 0; text-align: right; }
 .auth-forgot .auth-linkish { min-height: 32px; font-size: 0.8rem; }
 .auth-reset-sent { padding: 0.7rem 0.85rem; border: 1px solid #bfe0cc; border-radius: 11px; background: #eef8f1; color: #0f6b4f; }
+
+/* ── Homepage "About Celera Naturals" ────────────────────────────────────────
+   Scoped to the homepage so the About page and other sections are untouched. */
+body[data-page="home"] main .home-about-points {
+  display: grid;
+  gap: 0.45rem;
+  margin: 1rem 0 1.2rem;
+  padding: 0;
+  list-style: none;
+}
+body[data-page="home"] main .home-about-points li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  color: var(--store-ink, #18352b);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+body[data-page="home"] main .home-about-points span {
+  display: grid;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  place-items: center;
+  margin-top: 0.1rem;
+  border-radius: 50%;
+  background: #e3f3e8;
+  color: #0f6b4f;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+body[data-page="home"] main .home-about-brand { color: #0f6b4f; white-space: nowrap; }
+
+body[data-page="home"] main .home-about-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.1rem;
+}
+body[data-page="home"] main .home-about-link {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 0.35rem;
+  color: #0f6b4f;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+body[data-page="home"] main .home-about-link:hover { text-decoration: underline; }
+body[data-page="home"] main .home-about-link:focus-visible {
+  outline: 3px solid rgba(15, 107, 79, 0.35);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* The category tiles now navigate to their filtered shop view. */
+body[data-page="home"] main a.about-product-tile {
+  border-radius: 12px;
+  text-decoration: none;
+  transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease;
+}
+body[data-page="home"] main a.about-product-tile:hover {
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 10px 22px rgba(22, 64, 42, 0.1);
+  transform: translateY(-3px);
+}
+body[data-page="home"] main a.about-product-tile:focus-visible {
+  outline: 3px solid rgba(15, 107, 79, 0.4);
+  outline-offset: 2px;
+}
+body[data-page="home"] main a.about-product-tile:hover span { text-decoration: underline; }
+
+@media (prefers-reduced-motion: reduce) {
+  body[data-page="home"] main a.about-product-tile { transition: none; }
+  body[data-page="home"] main a.about-product-tile:hover { transform: none; }
+}
+
+/* ── Mobile brand wordmark ───────────────────────────────────────────────────
+   "CELERA NATURALS" is wider than the one-word form it replaced, so the
+   nowrap + ellipsis rules above were clipping it to "CELERA NATUR…".
+   It wraps onto two short lines instead, which fits the 38px logo height.  */
+@media (max-width: 600px) {
+  body[data-page] .site-header .brand-title .brand-name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    font-size: clamp(0.62rem, 2.9vw, 0.76rem);
+    line-height: 1.12;
+    letter-spacing: 0.01em;
+    word-spacing: -0.04em;
+  }
+}
+
+@media (max-width: 380px) {
+  body[data-page] .site-header .brand-title .brand-name { font-size: 0.6rem; }
+}

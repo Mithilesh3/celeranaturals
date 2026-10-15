@@ -14,9 +14,9 @@ import { getActiveCategories, getPublishedProducts } from "../lib/catalog-server
 const pageModeScript = `document.body.dataset.page=(${pageModeFor})(location.pathname)`;
 
 export const metadata: Metadata = {
-  title: "Celeranaturals | Natural Wellness, Premium Care",
+  title: "Celera Naturals | Natural Wellness, Premium Care",
   description:
-    "Celeranaturals premium wellness store for natural digestive, vitamin, probiotic and protein support.",
+    "Celera Naturals premium wellness store for natural digestive, vitamin, probiotic and protein support.",
 };
 
 /**

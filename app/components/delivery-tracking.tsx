@@ -1,22 +1,25 @@
 "use client";
 
 import {
-  DELIVERY_STEPS, FULFILMENT_LABEL, stepIndex, trustedTrackingUrl,
-  type FulfilmentStatus, type Tracking,
+  DELIVERY_STAGES, deliveryStageLabel, stageIndexOf, trustedTrackingUrl,
+  type DeliveryStageKey, type FulfilmentStatus, type Tracking,
 } from "../../lib/fulfilment";
 import { addressLines, formatIST, hasAddressDetails, type OrderAddress } from "../../lib/orders";
 import { formatEstimateDate } from "../../lib/delivery-estimate";
 
-/** What each step means to a customer, so the timeline is not just status words. */
-const STEP_HINT: Record<FulfilmentStatus, string> = {
-  pending: "Order placed and awaiting confirmation.",
-  confirmed: "We have confirmed your order.",
-  processing: "Your items are being prepared.",
-  packed: "Your parcel is packed and ready for pickup.",
-  shipped: "Handed over to the courier.",
-  delivered: "Delivered.",
-  cancelled: "This order was cancelled.",
-};
+/**
+ * When a stage was first reached. History entries hold the underlying status,
+ * so several of them (processing, packed, shipped) can map onto one stage; the
+ * earliest wins, which is when that stage genuinely began.
+ */
+function stageReachedAt(stage: DeliveryStageKey, timeline: Array<{ status: FulfilmentStatus; at: string }>) {
+  const target = DELIVERY_STAGES.findIndex((entry) => entry.key === stage) + 1;
+  const times = timeline
+    .filter((entry) => stageIndexOf(entry.status) === target)
+    .map((entry) => entry.at)
+    .sort();
+  return times[0];
+}
 
 export type TimelineEntry = { status: FulfilmentStatus; at: string; note?: string };
 export type EstimateWindow = { from: string; to: string; basis: "dispatch" | "order" } | null;
@@ -72,7 +75,7 @@ export function DeliveryTracking({
   updatedAt: string;
 }) {
   const cancelled = fulfilment === "cancelled";
-  const reached = cancelled ? -1 : stepIndex(fulfilment);
+  const reached = cancelled ? -1 : stageIndexOf(fulfilment);
   // The first time each step was recorded, so a dot can show when it happened.
   const reachedAt = new Map<FulfilmentStatus, string>();
   for (const entry of timeline) if (!reachedAt.has(entry.status)) reachedAt.set(entry.status, entry.at);
@@ -83,7 +86,7 @@ export function DeliveryTracking({
     <section className="panel track-card" aria-labelledby="track-heading">
       <div className="track-card__head">
         <h2 id="track-heading" className="panel__heading">Delivery tracking</h2>
-        <span className={`track-pill track-pill--${fulfilment}`}>{FULFILMENT_LABEL[fulfilment]}</span>
+        <span className={`track-pill track-pill--`}>{deliveryStageLabel(fulfilment)}</span>
       </div>
 
       {cancelled ? (
@@ -95,25 +98,32 @@ export function DeliveryTracking({
       ) : (
         <>
           <Estimate estimate={estimate} estimatedDeliveryDate={estimatedDeliveryDate} />
+          {/* Three stages, matching the admin controls exactly. `reached` is a
+              stage index, so a legacy order sitting on packed or shipped lands
+              correctly on "Preparing & Shipping". */}
           <ol className="track-steps">
-            {DELIVERY_STEPS.map((step, index) => {
-              const state = index < reached ? "done" : index === reached ? "current" : "upcoming";
-              const at = reachedAt.get(step);
+            {DELIVERY_STAGES.map((stage, index) => {
+              const position = index + 1;
+              const state = position < reached ? "done" : position === reached ? "current" : "upcoming";
+              const at = stageReachedAt(stage.key, timeline);
               return (
-                <li key={step} className={`track-step is-${state}`} aria-current={state === "current" ? "step" : undefined}>
+                <li key={stage.key} className={`track-step is-${state}`} aria-current={state === "current" ? "step" : undefined}>
                   <span className="track-step__dot" aria-hidden="true">{state === "done" ? "✓" : ""}</span>
                   <div className="track-step__body">
-                    <strong>{FULFILMENT_LABEL[step]}</strong>
-                    <small>{STEP_HINT[step]}</small>
+                    <strong>{stage.label}</strong>
+                    <small>{stage.hint}</small>
                     {at && <time dateTime={at}>{formatIST(at)}</time>}
                   </div>
                   <span className="store-sr-only">
-                    {state === "done" ? "Completed" : state === "current" ? "Current step" : "Not yet reached"}
+                    {state === "done" ? "Completed" : state === "current" ? "Current stage" : "Not yet reached"}
                   </span>
                 </li>
               );
             })}
           </ol>
+          {reached === 0 && (
+            <p className="track-source">Your order is awaiting confirmation.</p>
+          )}
         </>
       )}
 

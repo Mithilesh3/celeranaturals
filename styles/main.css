@@ -30,7 +30,19 @@ body {
   color: var(--text);
   background: radial-gradient(1600px 500px at 30% -10%, #f2ead7 0%, rgba(242, 234, 215, 0) 70%), var(--bg);
   scroll-behavior: smooth;
-  overflow-x: hidden;
+  /*
+   * No overflow-x: hidden here.
+   *
+   * It made <body> a scroll container, which silently disabled
+   * `position: sticky` on the site header — the header scrolled away instead
+   * of staying pinned (measured: at scrollY 300 its top was -268px, fully off
+   * screen). It was also masking layout defects rather than fixing them.
+   *
+   * The responsive audit now reports 0 horizontal overflow across all 80
+   * route x viewport combinations, so the clip has nothing left to hide and
+   * can be removed safely. Run scripts/responsive-audit.mjs before adding any
+   * overflow clamp back.
+   */
 }
 
 body {
@@ -2525,8 +2537,12 @@ body[data-page="home"] .top-strip {
 .home-hero-slider {
   position: relative;
   width: 100%;
-  max-width: none;
-  /* Height follows the active banner's natural ratio; the final 34px hold controls. */
+  /* Full-bleed at every viewport. The previous 1440px cap held the height
+     down on large monitors but left white gutters either side of the banner,
+     which is the defect this replaces. Height follows the tallest banner's
+     natural ratio (set inline from home-hero.tsx); the controls are overlaid
+     on the artwork rather than given their own band, so the slider is exactly
+     as tall as the image. */
   margin: 0;
   overflow: hidden;
   background: #ffffff;
@@ -2561,6 +2577,9 @@ body[data-page="home"] .top-strip {
   align-items: flex-start;
 }
 
+/* Full-bleed: the image takes the whole slider width and derives its own
+   height from the source ratio, so the banner is never letterboxed and never
+   cropped. The container height is set from the same ratio. */
 .home-hero-slide img {
   display: block;
   width: 100%;
@@ -2574,18 +2593,21 @@ body[data-page="home"] .top-strip {
   border-radius: 999px;
 }
 
+/* Measured from the banner artwork by scripts/probe-cta-position.mjs:
+   green pill at x=55,y=734 size 368x77 within the 1672x941 image. */
 .home-hero-shop-link-isabgol {
-  top: 76.3%;
-  left: 4.25%;
-  width: 18.6%;
-  height: 9.5%;
+  top: 78%;
+  left: 3.29%;
+  width: 22.01%;
+  height: 8.18%;
 }
 
+/* Measured: amber pill at x=1336,y=831 size 299x57 within 1672x941. */
 .home-hero-shop-link-fiber {
-  top: 69.5%;
-  left: 81.1%;
-  width: 16.4%;
-  height: 7.5%;
+  top: 88.31%;
+  left: 79.9%;
+  width: 17.88%;
+  height: 6.06%;
 }
 
 /* These are invisible hotspots sized as a percentage of the banner artwork, so
@@ -2612,7 +2634,7 @@ body[data-page="home"] .top-strip {
 
 .home-hero-arrow {
   position: absolute;
-  top: calc((100% - 34px) / 2);
+  top: 50%;
   z-index: 2;
   display: grid;
   width: 42px;
@@ -2645,23 +2667,27 @@ body[data-page="home"] .top-strip {
 .home-hero-dots {
   position: absolute;
   left: 50%;
-  bottom: 3px;
+  bottom: clamp(6px, 1.2vw, 16px);
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: 3px;
-  padding: 0;
-  background: transparent;
+  gap: 2px;
+  padding: 0 2px;
+  /* The dots now sit on the artwork instead of in a reserved 34px strip below
+     it. The translucent pill keeps them legible over any banner. */
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 2px 10px rgba(20, 37, 40, 0.18);
   transform: translateX(-50%);
 }
 
 /* The visible dot stays 7px (drawn by ::before); the button itself is grown
-   to a 28px touch target around it. */
+   to a 26px touch target around it. */
 .home-hero-dots button {
   appearance: none;
   display: grid;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   padding: 0;
   border: 0;
   border-radius: 50%;
@@ -3359,15 +3385,16 @@ body[data-page] .brand {
 }
 
 body[data-page] .logo-badge {
-  width: 50px;
-  height: 50px;
+  /* Lifted from 50px: the header read as undersized next to the hero. */
+  width: 58px;
+  height: 58px;
   border-radius: 9px;
   object-fit: contain;
   background: transparent;
 }
 
 body[data-page] .brand-title strong {
-  font-size: 1.08rem;
+  font-size: 1.22rem;
   letter-spacing: 0.08em;
   font-family: "DM Sans", "Segoe UI", sans-serif;
   color: #142a35;
@@ -4206,10 +4233,11 @@ body[data-page="auth"] .auth-form .btn {
   body[data-page] .brand-title strong {
     font-size: 0.88rem;
     letter-spacing: 0.03em;
-    max-width: 128px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    /* No fixed 128px clamp: the two-word brand name needs to wrap rather than
+       be cut off with an ellipsis. */
+    max-width: 100%;
+    white-space: normal;
+    overflow: visible;
   }
 
   body[data-page] .brand-title span {
@@ -5093,19 +5121,19 @@ body[data-page] .top-strip {
 }
 
 body[data-page] .brand-title strong {
-  font-size: 1.08rem;
+  font-size: 1.22rem;
   font-weight: 800;
   line-height: 1.08;
 }
 
 body[data-page] .brand-title span {
-  font-size: 0.82rem;
+  font-size: 0.86rem;
   line-height: 1.25;
 }
 
 body[data-page] .nav-links a,
 body[data-page] .nav-dropdown-trigger {
-  font-size: 1rem;
+  font-size: 1.06rem;
   font-weight: 650;
   line-height: 1.3;
 }
@@ -5537,8 +5565,10 @@ body[data-page] .site-header {
 
 body[data-page] .nav-wrap {
   width: var(--container);
-  min-height: 78px;
-  height: 78px;
+  /* 78px looked slight against a tall hero; 92px gives the bar presence
+     without turning it into a banner of its own. */
+  min-height: 92px;
+  height: 92px;
 }
 
 body[data-page] .nav-links {

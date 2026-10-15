@@ -7,7 +7,7 @@ import { useAuth } from "../components/auth-context";
 import { useStore } from "../components/store-context";
 import { getFirebaseAuth } from "../components/firebase";
 import { STATUS_LABEL, formatIST, type CustomerOrder } from "../../lib/orders";
-import { FULFILMENT_LABEL } from "../../lib/fulfilment";
+import { deliveryStageLabel } from "../../lib/fulfilment";
 import { formatINR } from "../../lib/money";
 import { SavedAddresses } from "../components/saved-addresses";
 import { ProfileCard } from "../components/profile-card";
@@ -85,7 +85,7 @@ function OrderRows({ orders }: { orders: CustomerOrder[] }) {
               {/* Payment and delivery are separate facts and are badged separately. */}
               <span className="order-list__badges">
                 <span className={`status-badge status-badge--${order.status}`}>{STATUS_LABEL[order.status]}</span>
-                <span className={`track-pill track-pill--${order.fulfilment}`}>{FULFILMENT_LABEL[order.fulfilment]}</span>
+                <span className={`track-pill track-pill--`}>{deliveryStageLabel(order.fulfilment)}</span>
               </span>
             </span>
             <span className="order-list__meta">

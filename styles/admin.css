@@ -437,3 +437,24 @@ button.admin-table__row:focus-visible { outline: 3px solid rgba(8, 129, 102, 0.3
 .admin-estimate__row select:disabled, .admin-estimate__row input:disabled { opacity: 0.55; }
 .admin-estimate__preview { margin: 0.35rem 0 0; padding: 0.45rem 0.6rem; border-radius: 9px; background: var(--surface-tinted); color: var(--store-ink); font-size: 0.8rem; }
 .admin-estimate__preview strong { color: var(--brand-ink); }
+
+/* ── Admin: three-stage delivery controls ────────────────────────────────── */
+.admin-stages { display: grid; gap: 0.4rem; margin: 0.2rem 0 0.5rem; }
+.admin-stage { display: flex; align-items: flex-start; gap: 0.55rem; padding: 0.5rem 0.6rem; border: 1px solid var(--border-hairline); border-radius: 10px; background: var(--surface-card); cursor: pointer; transition: border-color 150ms ease, background-color 150ms ease; }
+.admin-stage:hover { border-color: var(--store-green); }
+.admin-stage.is-chosen { border-color: var(--store-green); background: var(--surface-tinted); box-shadow: 0 0 0 2px rgba(20, 91, 58, 0.12); }
+.admin-stage input { margin-top: 0.2rem; accent-color: var(--store-green); }
+.admin-stage > span { display: grid; gap: 0.05rem; min-width: 0; }
+.admin-stage strong { color: var(--brand-ink); font-size: 0.84rem; font-weight: 700; }
+.admin-stage small { color: var(--store-muted); font-size: 0.7rem; }
+.admin-stage--done strong { color: #0f6b4f; }
+.admin-stage--done small { color: #0f6b4f; }
+.admin-stage--current { border-color: var(--store-green); }
+.admin-stage--current small { color: var(--store-green); font-weight: 650; }
+
+.admin-tracking-toggle { margin: 0.2rem 0 0.4rem; }
+.admin-tracking-toggle summary { color: var(--store-green); font-size: 0.76rem; font-weight: 650; cursor: pointer; }
+.admin-tracking-toggle summary::marker { color: var(--store-muted); }
+.admin-tracking-toggle .admin-tracking { margin-top: 0.4rem; }
+.admin-cancel-order { width: 100%; margin-top: 0.3rem; }
+.admin-confirm input { width: 100%; min-height: 38px; padding: 0.35rem 0.55rem; border: 1px solid var(--border-hairline); border-radius: 9px; font: inherit; font-size: 0.8rem; }

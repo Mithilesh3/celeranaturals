@@ -26,7 +26,7 @@ function AuthBrand() {
         </svg>
       </span>
       <span className="auth-brand__text">
-        <strong>CELERANATURALS</strong>
+        <strong>CELERA NATURALS</strong>
         <small>By Celera Healthcare</small>
       </span>
     </div>

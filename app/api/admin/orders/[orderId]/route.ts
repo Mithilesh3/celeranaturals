@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { FieldValue } from "firebase-admin/firestore";
 import { checkAdmin, adminDenialMessage } from "../../../../../lib/admin";
 import {
-  canTransition, currentFulfilment, validateTracking, trustedTrackingUrl,
-  FULFILMENT_STATUSES, type FulfilmentEvent, type FulfilmentStatus,
+  canTransition, canonicalForStage, currentFulfilment, currentStageKey, isDeliveryStageKey,
+  isForwardStage, validateTracking, trustedTrackingUrl, DELIVERY_STAGES,
+  FULFILMENT_STATUSES, type DeliveryStageKey, type FulfilmentEvent, type FulfilmentStatus,
 } from "../../../../../lib/fulfilment";
+
+const stageLabel = (stage: DeliveryStageKey) =>
+  DELIVERY_STAGES.find((entry) => entry.key === stage)?.label ?? stage;
 import { adminDb, isAdminConfigured } from "../../../../../lib/firebase-admin";
 import { ORDERS_COLLECTION, type StoredOrder } from "../../../../../lib/orders";
 
@@ -39,14 +43,29 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ or
   const admin = access.user;
 
   const { orderId } = await params;
-  let body: { fulfilment?: unknown; note?: unknown; courier?: unknown; trackingNumber?: unknown; trackingUrl?: unknown };
+  let body: {
+    stage?: unknown; fulfilment?: unknown; correction?: unknown; note?: unknown;
+    courier?: unknown; trackingNumber?: unknown; trackingUrl?: unknown;
+  };
   try { body = await request.json(); } catch { return NextResponse.json({ error: "Malformed request." }, { status: 400 }); }
 
-  const target = body.fulfilment;
-  if (!FULFILMENT_STATUSES.includes(target as FulfilmentStatus)) {
+  /**
+   * Two accepted shapes:
+   *   { stage: "confirmed" | "preparing" | "delivered" }  — the three-stage UI
+   *   { fulfilment: <FulfilmentStatus> }                  — cancel, and any
+   *                                                         older caller
+   * A stage is canonicalised server-side, so the browser never decides which
+   * underlying status gets stored.
+   */
+  const usingStage = body.stage !== undefined;
+  if (usingStage && !isDeliveryStageKey(body.stage)) {
+    return NextResponse.json({ error: "Unknown delivery stage." }, { status: 400 });
+  }
+  if (!usingStage && !FULFILMENT_STATUSES.includes(body.fulfilment as FulfilmentStatus)) {
     return NextResponse.json({ error: "Unknown fulfilment status." }, { status: 400 });
   }
-  const next = target as FulfilmentStatus;
+  const stage = usingStage ? (body.stage as DeliveryStageKey) : null;
+  const next = stage ? canonicalForStage(stage) : (body.fulfilment as FulfilmentStatus);
 
   const wantsTracking = body.courier !== undefined || body.trackingNumber !== undefined;
   if (wantsTracking) {
@@ -78,9 +97,34 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ or
       const order = snapshot.data() as StoredOrder;
       const from = currentFulfilment(order.fulfilment);
 
-      if (from === next) return { http: 409 as const, error: `Order is already ${next}.` };
-      if (!canTransition(from, next)) {
-        return { http: 409 as const, error: `Cannot move an order from ${from} to ${next}.` };
+      if (stage) {
+        // Three-stage workflow. Forward moves are normal and must never be
+        // refused — the old step-by-step chain rejected pending -> delivered,
+        // which is exactly the failure this replaces. Backward moves are
+        // corrections: allowed, but only when explicitly flagged with a
+        // reason, so they are deliberate and land in the audit trail.
+        const currentStage = currentStageKey(from);
+        if (currentStage === stage) {
+          return { http: 409 as const, error: `This order is already at "${stageLabel(stage)}".` };
+        }
+        if (from === "cancelled") {
+          return { http: 409 as const, error: "This order was cancelled and cannot be moved through delivery stages." };
+        }
+        if (!isForwardStage(from, stage) && body.correction !== true) {
+          return {
+            http: 409 as const,
+            error: `Moving back to "${stageLabel(stage)}" is a correction. Confirm the correction and give a reason.`,
+            needsCorrection: true,
+          };
+        }
+        if (!isForwardStage(from, stage) && !String(body.note ?? "").trim()) {
+          return { http: 400 as const, error: "A reason is required when correcting a delivery stage." };
+        }
+      } else {
+        if (from === next) return { http: 409 as const, error: `Order is already ${next}.` };
+        if (!canTransition(from, next)) {
+          return { http: 409 as const, error: `Cannot move an order from ${from} to ${next}.` };
+        }
       }
 
       // Checked against stored state inside the transaction, not against the
@@ -118,7 +162,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ or
       return { http: 200 as const, fulfilment: next };
     });
 
-    if ("error" in outcome) return NextResponse.json({ error: outcome.error }, { status: outcome.http });
+    if ("error" in outcome) {
+      // needsCorrection must survive to the client, otherwise the UI cannot
+      // know to offer the reason field for a backward move.
+      return NextResponse.json(
+        { error: outcome.error, ...("needsCorrection" in outcome ? { needsCorrection: true } : {}) },
+        { status: outcome.http },
+      );
+    }
     return NextResponse.json({ fulfilment: outcome.fulfilment });
   } catch {
     return NextResponse.json({ error: "Could not update the order." }, { status: 500 });

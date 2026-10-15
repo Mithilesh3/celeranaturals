@@ -57,15 +57,87 @@ export const eventActor = (event: Pick<FulfilmentEvent, "byEmail" | "byPhone" | 
   event.byEmail || event.byPhone || event.byUid;
 
 /**
- * The step order shown to customers. `cancelled` is deliberately not a step:
- * it ends the journey rather than advancing along it, so the UI renders it as
- * a separate terminal state instead of a sixth dot.
+ * The three delivery stages shown to both admins and customers.
+ *
+ * The underlying FulfilmentStatus union is unchanged, so orders written before
+ * this existed — which may hold processing, packed or shipped — keep working.
+ * Those older values simply map onto stage 2.
+ *
+ * `cancelled` is deliberately not a stage: it ends the journey rather than
+ * advancing along it, and is rendered as a separate terminal state.
  */
-export const DELIVERY_STEPS: FulfilmentStatus[] = [
-  "pending", "confirmed", "processing", "packed", "shipped", "delivered",
-];
+export const DELIVERY_STAGES = [
+  { key: "confirmed", label: "Order Confirmed", hint: "We have confirmed your order." },
+  { key: "preparing", label: "Preparing & Shipping", hint: "Your order is being prepared and sent out." },
+  { key: "delivered", label: "Delivered", hint: "Delivered." },
+] as const;
 
-export const stepIndex = (status: FulfilmentStatus) => DELIVERY_STEPS.indexOf(status);
+export type DeliveryStageKey = (typeof DELIVERY_STAGES)[number]["key"];
+
+/**
+ * The status actually stored when an admin picks a stage. Stage 2 canonicalises
+ * to "processing" rather than "shipped" so the three-stage flow never demands
+ * courier details; tracking stays optional and is entered separately.
+ */
+const STAGE_CANONICAL: Record<DeliveryStageKey, FulfilmentStatus> = {
+  confirmed: "confirmed",
+  preparing: "processing",
+  delivered: "delivered",
+};
+
+export const canonicalForStage = (stage: DeliveryStageKey): FulfilmentStatus => STAGE_CANONICAL[stage];
+
+export const isDeliveryStageKey = (value: unknown): value is DeliveryStageKey =>
+  DELIVERY_STAGES.some((stage) => stage.key === value);
+
+/**
+ * How far along an order is, as a stage index:
+ *   0 = awaiting confirmation (legacy "pending"; stage 1 not yet complete)
+ *   1 = Order Confirmed
+ *   2 = Preparing & Shipping  (processing | packed | shipped)
+ *   3 = Delivered
+ *  -1 = cancelled, which sits outside the normal progression
+ */
+export function stageIndexOf(status: FulfilmentStatus): number {
+  switch (status) {
+    case "cancelled": return -1;
+    case "pending": return 0;
+    case "confirmed": return 1;
+    case "processing":
+    case "packed":
+    case "shipped": return 2;
+    case "delivered": return 3;
+    default: return 0;
+  }
+}
+
+/** The stage key an order currently sits on, or null when not yet started/cancelled. */
+export function currentStageKey(status: FulfilmentStatus): DeliveryStageKey | null {
+  const index = stageIndexOf(status);
+  return index >= 1 && index <= 3 ? DELIVERY_STAGES[index - 1].key : null;
+}
+
+/**
+ * The three-stage wording for any stored status — the single label used by
+ * every badge, so a legacy "packed" order never shows six-stage vocabulary.
+ */
+export function deliveryStageLabel(status: FulfilmentStatus): string {
+  if (status === "cancelled") return "Cancelled";
+  const key = currentStageKey(status);
+  return key ? DELIVERY_STAGES.find((entry) => entry.key === key)!.label : "Awaiting confirmation";
+}
+
+export const stageTargetIndex = (stage: DeliveryStageKey) =>
+  DELIVERY_STAGES.findIndex((entry) => entry.key === stage) + 1;
+
+/**
+ * Whether moving to `stage` is a normal forward step. Backward moves are not
+ * forbidden outright — they are corrections, and the route requires an explicit
+ * flag plus a reason so they land in the audit trail.
+ */
+export function isForwardStage(from: FulfilmentStatus, stage: DeliveryStageKey): boolean {
+  return stageTargetIndex(stage) > stageIndexOf(from);
+}
 
 export type Tracking = {
   courier: string;

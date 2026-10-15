@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const product = await getPublishedProductBySlug(slug).catch(() => null);
   return {
-    title: product ? product.name + " | Celeranaturals" : "Product Not Found | Celeranaturals",
+    title: product ? product.name + " | Celera Naturals" : "Product Not Found | Celera Naturals",
     ...(product ? {} : { robots: { index: false, follow: false } }),
   };
 }

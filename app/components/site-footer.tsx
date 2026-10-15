@@ -9,10 +9,10 @@ export function SiteFooter() {
       <div className="container footer-grid">
         <div>
           <div className="brand">
-            <Image className="logo-badge" src="/assets/images/brand/logo.png" alt="Celeranaturals" width={300} height={300} sizes="50px" />
-            <div className="brand-title"><strong>CELERANATURALS</strong><span>By Celera Healthcare</span></div>
+            <Image className="logo-badge" src="/assets/images/brand/logo.png" alt="Celera Naturals" width={300} height={300} sizes="50px" />
+            <div className="brand-title"><strong>CELERA NATURALS</strong><span>By Celera Healthcare</span></div>
           </div>
-          <p style={{ marginTop: "0.8rem", color: "#d6d0c3", lineHeight: 1.7 }}>Celeranaturals by Celera Healthcare offers nutraceutical products across digestive care, vitamins, probiotics and protein categories.</p>
+          <p style={{ marginTop: "0.8rem", color: "#d6d0c3", lineHeight: 1.7 }}>Celera Naturals by Celera Healthcare offers nutraceutical products across digestive care, vitamins, probiotics and protein categories.</p>
           <p style={{ margin: "0.6rem 0 0", color: "#d6d0c3" }}>Email: info@celerahealthcare.com<br />Support: +91 98113 51137</p>
         </div>
         <div><h4 className="footer-title">Products</h4><div className="footer-links"><Link href="/shop">Products</Link><Link href="/shop?category=psyllium-husk">Psyllium Husk</Link><Link href="/shop?category=vitamins-minerals">Vitamins and Minerals</Link><Link href="/shop?category=probiotics">Probiotics</Link><Link href="/shop?category=protein">Protein</Link></div></div>

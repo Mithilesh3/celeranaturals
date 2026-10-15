@@ -44,9 +44,9 @@ export function SiteHeader() {
       </div>
       <header className="site-header">
         <div className="container nav-wrap">
-          <Link href="/" className="brand" aria-label="Celeranaturals home">
-            <Image className="logo-badge" src="/assets/images/brand/logo.png" alt="Celeranaturals" width={300} height={300} sizes="50px" priority />
-            <div className="brand-title"><strong className="brand-name">CELERANATURALS</strong><span>By Celera Healthcare</span></div>
+          <Link href="/" className="brand" aria-label="Celera Naturals home">
+            <Image className="logo-badge" src="/assets/images/brand/logo.png" alt="Celera Naturals" width={300} height={300} sizes="50px" priority />
+            <div className="brand-title"><strong className="brand-name">CELERA NATURALS</strong><span>By Celera Healthcare</span></div>
           </Link>
           <form className="mobile-header-search" action="/shop" method="get" role="search">
             <label className="mobile-header-search-label" htmlFor="mobile-product-search">Search products</label>

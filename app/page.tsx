@@ -64,7 +64,7 @@ export default async function HomePage() {
     <main>
       <HomeHero />
 
-      <section className="home-trust-wrap" aria-label="Celeranaturals quality standards"><div className="container home-trust-panel">
+      <section className="home-trust-wrap" aria-label="Celera Naturals quality standards"><div className="container home-trust-panel">
         {assurances.map(({ title, copy, icon }) => <div className="home-trust-item" key={title}><span className="home-trust-icon" aria-hidden="true"><svg viewBox="0 0 32 32" focusable="false">{icon}</svg></span><div><h3>{title}</h3><p>{copy}</p></div></div>)}
       </div></section>
 
@@ -91,11 +91,19 @@ export default async function HomePage() {
 
       <section className="section home-leadership-wrap" aria-labelledby="home-leadership-title"><div className="container"><header className="home-leadership-heading"><span className="home-featured-eyebrow">The people behind Celera</span><h2 className="section-title" id="home-leadership-title">Meet Our Leadership Team</h2></header><div className="home-leadership-grid">{leadershipTeam.map((person) => <article className="home-leadership-card" key={person.name}><div className="home-leadership-photo"><Image src={person.image} alt={person.name} width={500} height={480} sizes="(max-width: 560px) 112px, (max-width: 900px) 45vw, 360px" /></div><div className="home-leadership-info"><h3>{person.name}</h3><p className="home-leadership-role">{person.role}</p><p className="home-leadership-bio">{person.bio}</p></div></article>)}</div></div></section>
 
-      <section className="section section-ivory home-about-wrap"><div className="container"><div className="story-grid home-about-grid"><div className="story-copy reveal home-about-copy"><span className="pill">About Celeranaturals</span><h2 className="section-title home-about-title">Celeranaturals is the consumer wellness brand of Celera Healthcare.</h2><p className="section-sub">We deliver category-led nutraceutical solutions across digestive care, vitamins, probiotics and protein support, with transparent product information and responsive customer support.</p><Link className="btn btn-secondary" href="/about">About Celeranaturals</Link></div><div className="story-media reveal home-about-media"><div className="about-stage" aria-label="Celeranaturals product categories">
-        <div className="about-product-tile"><Image src="/assets/images/category-cutouts/psyllium-husk.png" alt="Psyllium Husk product" width={1254} height={1254} sizes="(max-width: 768px) 40vw, 220px" loading="lazy" /><span>Psyllium Husk</span></div>
-        <div className="about-product-tile"><Image src="/assets/images/category-cutouts/vitamins-minerals.png" alt="Vitamins and Minerals products" width={1254} height={1254} sizes="(max-width: 768px) 40vw, 220px" loading="lazy" /><span>Vitamins &amp; Minerals</span></div>
-        <div className="about-product-tile"><Image src="/assets/images/category-cutouts/probiotics.png" alt="Probiotic products" width={1254} height={1254} sizes="(max-width: 768px) 40vw, 220px" loading="lazy" /><span>Probiotics</span></div>
-        <div className="about-product-tile"><Image src="/assets/images/category-cutouts/protein.png" alt="Protein supplement" width={1254} height={1254} sizes="(max-width: 768px) 40vw, 220px" loading="lazy" /><span>Protein</span></div>
+      <section className="section section-ivory home-about-wrap"><div className="container"><div className="story-grid home-about-grid"><div className="story-copy reveal home-about-copy"><span className="pill">About Celera Naturals</span><h2 className="section-title home-about-title">The consumer wellness brand of <span className="home-about-brand">Celera Healthcare</span>.</h2><p className="section-sub">Category-led nutraceutical solutions across digestive care, vitamins, probiotics and protein support — with transparent product information and responsive customer support.</p>
+        {/* Each point is a fact already stated elsewhere on the site; nothing
+            new is claimed here. */}
+        <ul className="home-about-points">
+          <li><span aria-hidden="true">✓</span>Four focused wellness categories</li>
+          <li><span aria-hidden="true">✓</span>Clear ingredient and usage information</li>
+          <li><span aria-hidden="true">✓</span>Support for order and product questions</li>
+        </ul>
+        <div className="home-about-actions"><Link className="btn btn-secondary" href="/about">About Celera Naturals</Link><Link className="home-about-link" href="/shop">Browse all products <span aria-hidden="true">→</span></Link></div></div><div className="story-media reveal home-about-media"><div className="about-stage" aria-label="Celera Naturals product categories">
+        <Link className="about-product-tile" href="/shop?category=psyllium-husk"><Image src="/assets/images/category-cutouts/psyllium-husk.png" alt="Psyllium Husk product" width={1254} height={1254} sizes="(max-width: 768px) 40vw, 220px" loading="lazy" /><span>Psyllium Husk</span></Link>
+        <Link className="about-product-tile" href="/shop?category=vitamins-minerals"><Image src="/assets/images/category-cutouts/vitamins-minerals.png" alt="Vitamins and Minerals products" width={1254} height={1254} sizes="(max-width: 768px) 40vw, 220px" loading="lazy" /><span>Vitamins &amp; Minerals</span></Link>
+        <Link className="about-product-tile" href="/shop?category=probiotics"><Image src="/assets/images/category-cutouts/probiotics.png" alt="Probiotic products" width={1254} height={1254} sizes="(max-width: 768px) 40vw, 220px" loading="lazy" /><span>Probiotics</span></Link>
+        <Link className="about-product-tile" href="/shop?category=protein"><Image src="/assets/images/category-cutouts/protein.png" alt="Protein supplement" width={1254} height={1254} sizes="(max-width: 768px) 40vw, 220px" loading="lazy" /><span>Protein</span></Link>
       </div></div></div></div></section>
 
       <section className="section section-deep promo-wrap"><div className="container"><div className="banner reveal home-support-banner"><span className="pill" style={{ background: "rgba(255,255,255,0.2)", color: "#fff" }}>Support and Policies</span><h2 className="section-title banner-title">Need help with products, orders or shipping?</h2><p style={{ margin: 0, color: "#d8eced", maxWidth: "60ch" }}>Contact details and policy links are available across the website for quick assistance and order clarity.</p><div><Link className="btn btn-ghost" href="/contact">Contact Support</Link></div></div></div></section>

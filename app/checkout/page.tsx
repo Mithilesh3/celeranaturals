@@ -173,7 +173,7 @@ export default function CheckoutPage() {
         order_id: created.razorpayOrderId,
         amount: created.amount,
         currency: created.currency,
-        name: "Celeranaturals",
+        name: "Celera Naturals",
         description: `Order ${created.orderId}`,
         prefill: {
           name: address.fullName,
