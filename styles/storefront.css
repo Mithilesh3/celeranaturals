@@ -1334,6 +1334,19 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
    fills the page instead of leaving a dead left margin. */
 .account-page .store-container { width: min(1280px, calc(100% - 48px)); max-width: 1280px; }
 
+/*
+ * Clearance for the fixed WhatsApp button (48px plus its offset).
+ *
+ * Not cosmetic: on the Overview tab the Saved addresses card lands in the
+ * right column, and at 768px and 1024px its "Add address" button sat exactly
+ * under the floating button — elementFromPoint confirmed the button, not the
+ * link, was on top, so the control could not be clicked. With the page too
+ * short to scroll, there was no way to move it out from under. The extra
+ * bottom space makes the page scrollable past its last control at every
+ * width, which is also what keeps Sign out reachable on phones.
+ */
+.account-page { padding-bottom: 76px; }
+
 .account-welcome { display: flex; align-items: center; gap: 0.85rem; margin-bottom: 1.1rem; padding: 0.9rem 1.1rem; border: 1px solid var(--border-hairline); border-radius: 14px; background: linear-gradient(110deg, var(--surface-tinted), var(--surface-card) 78%); }
 .account-welcome__avatar { display: grid; width: 46px; height: 46px; flex: 0 0 46px; place-items: center; border-radius: 50%; background: var(--brand-ink); color: #fff; font-size: 1.15rem; font-weight: 750; }
 .account-welcome__greeting { margin: 0; color: var(--store-muted); font-size: 0.76rem; }
@@ -1366,7 +1379,9 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
 /* These text buttons are real actions (Edit, Publish, Archive, View details,
    Correct address), not prose links, and were only ~19px tall. inline-flex
    with a 32px minimum gives a comfortable target without changing the look. */
-.panel__link { display: inline-flex; min-height: 32px; align-items: center; border: 0; background: none; padding: 0; color: var(--store-green); font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
+/* 36px, not 32: this is the "Add address" / "View all orders" control, and at
+   32 it was the smallest hit target on the page even with a mouse. */
+.panel__link { display: inline-flex; min-height: 36px; align-items: center; border: 0; background: none; padding: 0; color: var(--store-green); font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
 .panel__link:hover { text-decoration: underline; }
 .panel__link:focus-visible { outline: 3px solid rgba(8, 129, 102, 0.3); outline-offset: 2px; border-radius: 4px; }
 .account-stat { margin: 0 0 0.3rem; color: var(--store-ink); font-size: 0.9rem; }
@@ -1419,9 +1434,16 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
 /* Order & payment responsive ---------------------------------------------- */
 @media (max-width: 1024px) {
   .checkout-layout { grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.9fr); gap: 1rem; }
-  /* Two columns; the wide card keeps its full-row emphasis. */
-  .account-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .account-grid__wide { grid-column: auto; }
+  /*
+   * The .account-grid rules that used to live here are gone on purpose.
+   *
+   * They were a second, older set of account breakpoints competing with the
+   * ones further down this file, and being unscoped they also caught
+   * .account-grid--one. That forced the single-card Wishlist tab into two
+   * columns inside its own 520px max-width, rendering the card 253px wide
+   * with an empty cell beside it at 768px and 1024px. All account column
+   * counts now live in one block — search "Account grid breakpoints".
+   */
 }
 
 @media (max-width: 900px) {
@@ -1433,10 +1455,10 @@ body:has(main.site-redesign) .mobile-menu { background: var(--surface-card); }
 
 @media (max-width: 760px) {
   .account-page .store-container { width: calc(100% - 28px); }
-  .account-grid { grid-template-columns: minmax(0, 1fr); gap: 0.8rem; }
   .account-grid__wide { grid-column: span 1; }
   .account-welcome { padding: 0.8rem 0.9rem; }
-  .account-tabbar button { padding: 0.55rem 0.7rem; font-size: 0.82rem; }
+  /* Column counts are set in the consolidated block, not here. */
+  .account-grid { gap: 0.8rem; }
 }
 
 @media (max-width: 560px) {
@@ -2079,16 +2101,76 @@ body[data-page="home"] main > .home-leadership-wrap {
   .account-page .detail-list > div:nth-last-child(-n+2):nth-child(odd):last-child { grid-column: 1 / -1; }
 }
 
+/*
+ * Account grid breakpoints — the single source of truth for how many columns
+ * each tab uses. Do not add account column counts to any other media block.
+ *
+ * Every selector here is exactly one class deep on purpose. The previous
+ * version scoped the tablet rule with
+ *   .account-grid:not(.account-grid--one):not(.account-grid--two)
+ * to keep it off the Profile and Wishlist variants. That worked, but three
+ * classes gave it specificity 0-3-0, so the plain `.account-grid` rule in the
+ * narrower query below — specificity 0-1-0 — could no longer override it.
+ * Both queries match on a phone, the heavier one won, and the Overview tab
+ * rendered as two 160px columns at 360px wide instead of stacking. Listing
+ * the variants explicitly keeps the specificity flat so source order decides,
+ * which is what the cascade is for.
+ */
+
+/*
+ * Tablet: two equal columns.
+ *
+ * --one must be restated here rather than excluded with :not(). The Wishlist
+ * wrapper carries BOTH classes, so a bare `.account-grid` rule matches it too
+ * and would otherwise win on source order over the base `.account-grid--one`
+ * declaration above, giving one card a two-column track and a 254px width at
+ * 768px. Restating it last inside this block overrides at equal specificity,
+ * which keeps the flat cascade the mobile query below depends on.
+ */
 @media (max-width: 899px) {
-  /* Tablet: two equal columns. The --one and --two variants carry their own
-     column counts for the Profile and Wishlist tabs and must not be caught. */
-  .account-grid:not(.account-grid--one):not(.account-grid--two) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .account-grid,
+  .account-grid--two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .account-grid--one { grid-template-columns: minmax(0, 1fr); }
 }
 
-@media (max-width: 680px) {
-  .account-grid, .account-grid--two { grid-template-columns: minmax(0, 1fr); }
+/*
+ * Mobile: one full-width column for every tab. 767px rather than 680px so the
+ * stacking takes effect below the 768px tablet breakpoint, as specified.
+ * max-width is released too — the variants' 860px and 520px caps would
+ * otherwise stop a stacked card filling the container.
+ */
+@media (max-width: 767px) {
+  .account-grid,
+  .account-grid--one,
+  .account-grid--two {
+    grid-template-columns: minmax(0, 1fr);
+    max-width: none;
+  }
   .account-page .panel { padding: 0.8rem 0.85rem; }
   .account-welcome { padding: 0.55rem 0.75rem; }
+
+  /*
+   * Touch sizing keyed to viewport width, not only to `pointer: coarse`.
+   * The coarse-pointer block further up already does this for real
+   * touchscreens, but it leaves a narrow desktop window — and any device
+   * reporting a fine pointer — with 36px tabs and a 32px "Add address".
+   */
+  .account-tabbar button { min-height: 44px; padding: 0.55rem 0.8rem; font-size: 0.84rem; }
+  .account-page .panel__link { min-height: 44px; }
+  .account-signout__btn { min-height: 44px; }
+
+  /* Sign out reads as the end of the page, so it takes the full width here
+     rather than sitting as a small control against a wide empty row. */
+  .account-signout { flex-direction: column; align-items: stretch; gap: 0.6rem; }
+  .account-signout__row { flex-direction: column; }
+  .account-signout__btn { width: 100%; }
+
+  /* Card actions ("Edit name", "Browse products", "View wishlist") span the
+     card instead of hugging their label, which reads as deliberate in a
+     stacked layout and gives a full-width target. */
+  .account-page .store-button.panel__action { width: 100%; }
+
+  .account-page { padding-bottom: 92px; }
 }
 /* Each Overview column stacks independently, so a tall Profile card cannot
    push Wishlist down and open a gap beneath Recent orders. */
