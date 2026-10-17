@@ -175,6 +175,15 @@ export function HomeHero() {
          * scrollbar, so on a desktop browser with one a vw-derived height is
          * a few pixels taller than the image and leaves a white strip under
          * the banner. aspect-ratio measures this element's real width.
+         *
+         * There is deliberately no maxWidth. A height budget used to be
+         * converted into one here so the whole banner fit above the fold; the
+         * cost was a narrow centred banner with wide dark margins, so the
+         * full-width brief replaces it. Width is now whatever the viewport
+         * gives, and the height follows the artwork's own ratio — which means
+         * on a wide short screen the banner does extend past the fold. That is
+         * inherent to 1.77:1 artwork in a ~2.5:1 space and can only be removed
+         * by re-exporting the banners wider.
          */
         style={{ aspectRatio: `1 / ${TALLEST_RATIO}` }}
         onPointerEnter={(event) => {

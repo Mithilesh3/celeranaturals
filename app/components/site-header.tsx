@@ -1,11 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useStore } from "./store-context";
 import { AccountMenu, MobileAccountSection } from "./account-menu";
+
+/**
+ * The Categories menu, shared by the desktop dropdown and the mobile
+ * accordion so the two cannot drift apart — the mobile list was missing
+ * "View All Products" because it was a second hand-maintained copy.
+ *
+ * Each slug is checked against ShopClient's category list on arrival; an
+ * unknown one silently falls back to "All Categories" rather than erroring,
+ * so these must match the catalog exactly. Verified against the live catalog
+ * by scripts/test-nav-dropdown.mjs, which follows every link and asserts the
+ * shop lands on the matching filter.
+ */
+const CATEGORY_LINKS = [
+  { href: "/shop?category=psyllium-husk", label: "Psyllium Husk" },
+  { href: "/shop?category=vitamins-minerals", label: "Vitamins and Minerals" },
+  { href: "/shop?category=probiotics", label: "Probiotics" },
+  { href: "/shop?category=protein", label: "Protein" },
+];
 
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -13,6 +31,39 @@ export function SiteHeader() {
   const { cart, wishlist } = useStore();
   const pathname = usePathname();
   const cartCount = cart.reduce((sum, row) => sum + row.qty, 0);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+
+  // An open dropdown has to be dismissible without picking something from it.
+  // Previously nothing closed it: no outside click, no Escape, no route
+  // change — so it sat open over the page until the trigger was clicked again.
+  //
+  // pointerdown rather than click, so the menu goes away on press instead of
+  // lingering until release, and so a drag that starts outside still closes
+  // it. The listener is registered only while open, which also means the very
+  // press that opens the menu cannot immediately close it again.
+  useEffect(() => {
+    if (!categoriesOpen) return;
+
+    const onPointerDown = (event: PointerEvent | MouseEvent) => {
+      const target = event.target as Node | null;
+      if (target && dropdownRef.current?.contains(target)) return;
+      setCategoriesOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setCategoriesOpen(false);
+      // Focus would otherwise be lost to <body>, stranding keyboard users.
+      triggerRef.current?.focus();
+    };
+
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [categoriesOpen]);
 
   // While the drawer covers the screen it owns the viewport: Escape closes it
   // and the page behind must not scroll. The previous overflow value is
@@ -29,9 +80,14 @@ export function SiteHeader() {
     };
   }, [menuOpen]);
 
-  // A route change while the drawer is open would otherwise leave it covering
-  // the new page.
-  useEffect(() => { setMenuOpen(false); }, [pathname]);
+  // A route change while the drawer or dropdown is open would otherwise leave
+  // it covering the new page. Clicking a menu link already closes the
+  // dropdown, but back/forward and in-page links do not go through that
+  // handler.
+  useEffect(() => {
+    setMenuOpen(false);
+    setCategoriesOpen(false);
+  }, [pathname]);
 
   return (
     <>
@@ -56,13 +112,33 @@ export function SiteHeader() {
           <nav className="nav-links" aria-label="Primary navigation">
             <Link href="/" aria-current={pathname === "/" ? "page" : undefined} className={pathname === "/" ? "active" : ""}>Home</Link>
             <Link href="/shop" aria-current={pathname.startsWith("/shop") || pathname.startsWith("/product") ? "page" : undefined} className={pathname.startsWith("/shop") || pathname.startsWith("/product") ? "active" : ""}>Products</Link>
-            <div className={`nav-dropdown${categoriesOpen ? " open" : ""}`}>
-              <button className="nav-dropdown-trigger" type="button" aria-expanded={categoriesOpen} aria-haspopup="true" onClick={() => setCategoriesOpen((open) => !open)}>Categories<span className="nav-caret" aria-hidden="true" /></button>
-              <div className="nav-dropdown-menu">
-                <Link href="/shop?category=psyllium-husk" onClick={() => setCategoriesOpen(false)}>Psyllium Husk</Link>
-                <Link href="/shop?category=vitamins-minerals" onClick={() => setCategoriesOpen(false)}>Vitamins and Minerals</Link>
-                <Link href="/shop?category=probiotics" onClick={() => setCategoriesOpen(false)}>Probiotics</Link>
-                <Link href="/shop?category=protein" onClick={() => setCategoriesOpen(false)}>Protein</Link>
+            <div className={`nav-dropdown${categoriesOpen ? " open" : ""}`} ref={dropdownRef}>
+              <button
+                className="nav-dropdown-trigger"
+                type="button"
+                ref={triggerRef}
+                aria-expanded={categoriesOpen}
+                aria-haspopup="true"
+                aria-controls="nav-categories-menu"
+                onClick={() => setCategoriesOpen((open) => !open)}
+                // Down-arrow is the expected way to enter a disclosure menu
+                // from the keyboard; without it the only route in was Tab,
+                // which required the menu to already be open.
+                onKeyDown={(event) => {
+                  if (event.key !== "ArrowDown") return;
+                  event.preventDefault();
+                  setCategoriesOpen(true);
+                  requestAnimationFrame(() => {
+                    dropdownRef.current?.querySelector<HTMLAnchorElement>(".nav-dropdown-menu a")?.focus();
+                  });
+                }}
+              >
+                Categories<span className="nav-caret" aria-hidden="true" />
+              </button>
+              <div className="nav-dropdown-menu" id="nav-categories-menu">
+                {CATEGORY_LINKS.map((item) => (
+                  <Link href={item.href} key={item.href} onClick={() => setCategoriesOpen(false)}>{item.label}</Link>
+                ))}
                 <Link className="nav-dropdown-all" href="/shop" onClick={() => setCategoriesOpen(false)}>View All Products →</Link>
               </div>
             </div>
@@ -92,10 +168,10 @@ export function SiteHeader() {
           <Link href="/" onClick={() => setMenuOpen(false)}>Home</Link>
           <Link href="/shop" onClick={() => setMenuOpen(false)}>Products</Link>
           <details className="mobile-category-group"><summary>Categories</summary>
-            <Link href="/shop?category=psyllium-husk" onClick={() => setMenuOpen(false)}>Psyllium Husk</Link>
-            <Link href="/shop?category=vitamins-minerals" onClick={() => setMenuOpen(false)}>Vitamins and Minerals</Link>
-            <Link href="/shop?category=probiotics" onClick={() => setMenuOpen(false)}>Probiotics</Link>
-            <Link href="/shop?category=protein" onClick={() => setMenuOpen(false)}>Protein</Link>
+            {CATEGORY_LINKS.map((item) => (
+              <Link href={item.href} key={item.href} onClick={() => setMenuOpen(false)}>{item.label}</Link>
+            ))}
+            <Link className="mobile-category-all" href="/shop" onClick={() => setMenuOpen(false)}>View All Products →</Link>
           </details>
           <Link href="/about" onClick={() => setMenuOpen(false)}>About</Link>
           <Link href="/contact" onClick={() => setMenuOpen(false)}>Contact</Link>

@@ -209,8 +209,11 @@ try {
   })()`);
   check("the Shop Now hotspot keeps its existing destination",
     cta.href === "/product/celera-naturals-isabgol-psyllium-husk-2x100g", String(cta.href));
+  // Expected values come from scripts/probe-cta-position.mjs run against the
+  // shipped artwork, so replacing a banner means re-running that probe and
+  // updating both this assertion and the CSS.
   check("the hotspot overlays the measured button area",
-    Math.abs(cta.left - 3.29) < 1.5 && Math.abs(cta.top - 78) < 2, JSON.stringify(cta));
+    Math.abs(cta.left - 4.43) < 1.5 && Math.abs(cta.top - 77.9) < 2, JSON.stringify(cta));
 } catch (error) {
   check("harness completed", false, error.message);
 } finally {

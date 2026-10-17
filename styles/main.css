@@ -2523,6 +2523,20 @@ body[data-page="home"] .top-strip {
   background: #0d5861;
 }
 
+/*
+ * Deep navy backdrop behind the banner slider.
+ *
+ * It is a fallback layer, not a visible frame. The banners are opaque
+ * 1672x941 artwork and the slider is sized to that exact ratio at 100% width,
+ * so this background is covered to the pixel on a loaded page; it shows only
+ * in the moment before the first image decodes, and behind the rounded page
+ * edges on browsers that anti-alias them.
+ *
+ * There is deliberately NO padding here. A responsive inset used to live on
+ * this rule to make the backdrop visible, and that inset was the entire cause
+ * of the dark-blue side margins around the banner — the slider itself was
+ * already width: 100%. Putting any horizontal padding back reintroduces them.
+ */
 .home-hero {
   position: relative;
   z-index: 1;
@@ -2530,24 +2544,70 @@ body[data-page="home"] .top-strip {
   max-width: none;
   margin: 0;
   padding: 0;
-  background: #ffffff;
+  overflow: hidden;
+  background:
+    radial-gradient(1100px 620px at 86% 4%, rgba(63, 169, 201, 0.18) 0%, rgba(63, 169, 201, 0) 62%),
+    radial-gradient(900px 560px at 6% 14%, rgba(28, 111, 168, 0.2) 0%, rgba(28, 111, 168, 0) 60%),
+    radial-gradient(1000px 640px at 70% 96%, rgba(13, 88, 97, 0.22) 0%, rgba(13, 88, 97, 0) 62%),
+    linear-gradient(135deg, #061527 0%, #08203A 38%, #0A2A43 70%, #061627 100%);
   border-bottom: 0;
 }
+
+/* Network nodes and connecting lines, held behind the banner. */
+.home-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/assets/images/hero/hero-network-bg.svg");
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+/*
+ * The vignette that used to sit here is gone on purpose.
+ *
+ * It was a generated child of .home-hero, so it painted ON TOP of the slider
+ * and darkened the outer ~15% of the banner. That was acceptable while the
+ * artwork was inset and the vignette fell mostly on the backdrop; now that the
+ * banner is full-bleed it would tint the supplied artwork itself, which must
+ * be shown as delivered.
+ */
 
 .home-hero-slider {
   position: relative;
   width: 100%;
-  /* Full-bleed at every viewport. The previous 1440px cap held the height
-     down on large monitors but left white gutters either side of the banner,
-     which is the defect this replaces. Height follows the tallest banner's
-     natural ratio (set inline from home-hero.tsx); the controls are overlaid
-     on the artwork rather than given their own band, so the slider is exactly
-     as tall as the image. */
+  /*
+   * Full-bleed: no max-width, no auto margins, no card framing.
+   *
+   * Every width constraint that has ever shrunk this banner has come from
+   * somewhere else and been patched here by mistake. The two real ones were
+   * padding on .home-hero (dark-blue side margins) and a height cap converted
+   * into a max-width inline from home-hero.tsx (centred narrow card). Both are
+   * gone. If the banner looks narrow again, measure the ancestor chain with
+   * scripts/probe-hero-width.mjs before touching this rule.
+   *
+   * The height comes from aspect-ratio set inline in home-hero.tsx, which owns
+   * the artwork's shape, so the box is exactly as tall as the image at any
+   * width and the three slides never change height mid-transition.
+   */
   margin: 0;
+  /*
+   * This clips the ADJACENT slides in the flex track, not the active artwork.
+   * The slider box and the image are the same height by construction, so the
+   * visible banner loses nothing — scripts/probe-hero-crop.mjs reports 0px of
+   * top/bottom clipping at every width. A carousel cannot work without it.
+   */
   overflow: hidden;
-  background: #ffffff;
+  /*
+   * No border-radius, no box-shadow, no ring. Those made the banner read as a
+   * card floating on a backdrop; a full-width hero sits flush against the
+   * navbar and the section below it instead.
+   */
+  background: transparent;
   touch-action: pan-y;
-  transition: height 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 .home-hero-track {
@@ -2594,20 +2654,22 @@ body[data-page="home"] .top-strip {
 }
 
 /* Measured from the banner artwork by scripts/probe-cta-position.mjs:
-   green pill at x=55,y=734 size 368x77 within the 1672x941 image. */
+   dark green pill at x=74,y=733 size 361x71 within the 1672x941 image.
+   Re-measure with that script whenever a banner file is replaced — both
+   pills shifted when the artwork was last updated. */
 .home-hero-shop-link-isabgol {
-  top: 78%;
-  left: 3.29%;
-  width: 22.01%;
-  height: 8.18%;
+  top: 77.9%;
+  left: 4.43%;
+  width: 21.59%;
+  height: 7.55%;
 }
 
-/* Measured: amber pill at x=1336,y=831 size 299x57 within 1672x941. */
+/* Measured: amber pill at x=1333,y=817 size 305x71 within 1672x941. */
 .home-hero-shop-link-fiber {
-  top: 88.31%;
-  left: 79.9%;
-  width: 17.88%;
-  height: 6.06%;
+  top: 86.82%;
+  left: 79.72%;
+  width: 18.24%;
+  height: 7.55%;
 }
 
 /* These are invisible hotspots sized as a percentage of the banner artwork, so
@@ -3457,6 +3519,8 @@ body[data-page] .nav-dropdown-menu {
   z-index: 75;
   display: none;
   width: 238px;
+  /* Never wider than the screen on a narrow desktop window. */
+  max-width: calc(100vw - 2rem);
   padding: 0.46rem;
   border: 1px solid #d8e4e9;
   border-radius: 8px;
@@ -3465,7 +3529,43 @@ body[data-page] .nav-dropdown-menu {
   transform: translate(-50%, 0);
 }
 
-body[data-page] .nav-dropdown:hover .nav-dropdown-menu,
+/*
+ * Invisible bridge across the 17px gap between the trigger and the menu.
+ *
+ * The menu is offset below the trigger, but `.nav-dropdown` is only as tall
+ * as the trigger itself, so moving the pointer down towards the menu left the
+ * hover target and the menu vanished before it could be reached. Because
+ * :hover applies to ancestors, hovering this bridge counts as hovering
+ * .nav-dropdown and keeps the menu open while the pointer crosses.
+ */
+body[data-page] .nav-dropdown-menu::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -1.05rem;
+  height: 1.05rem;
+}
+
+/*
+ * Hover-to-open is for real pointers only. On a touchscreen :hover sticks
+ * after a tap, which left the menu open over the page with no way to dismiss
+ * it; there the click handler drives it instead.
+ */
+@media (hover: hover) and (pointer: fine) {
+  body[data-page] .nav-dropdown:hover .nav-dropdown-menu {
+    display: block;
+  }
+}
+
+/*
+ * Deliberately NOT :focus-within on .nav-dropdown. The trigger lives inside
+ * it, so Escape — which closes the menu and returns focus to the trigger —
+ * immediately re-opened it, and the menu could never be dismissed from the
+ * keyboard. Keyboard opening is handled by the `open` class instead, set by
+ * Enter/Space on the trigger or by ArrowDown.
+ */
+
 body[data-page] .nav-dropdown.open .nav-dropdown-menu {
   display: block;
 }
@@ -3566,7 +3666,17 @@ body[data-page] .mobile-only-search {
   display: none;
 }
 
-body[data-page] .nav-links .nav-dropdown:hover > .nav-dropdown-menu,
+/*
+ * Same split as the base rule above: the hover half has to stay inside the
+ * fine-pointer query or this !important would re-enable sticky hover menus on
+ * touchscreens, which is exactly what the query exists to prevent.
+ */
+@media (hover: hover) and (pointer: fine) {
+  body[data-page] .nav-links .nav-dropdown:hover > .nav-dropdown-menu {
+    display: block !important;
+  }
+}
+
 body[data-page] .nav-links .nav-dropdown.open > .nav-dropdown-menu {
   display: block !important;
 }
